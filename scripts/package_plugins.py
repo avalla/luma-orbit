@@ -32,10 +32,11 @@ source = package / 'Sorgenti/Luma'
 source.mkdir(parents=True, exist_ok=True)
 for name in ['Source', 'Tests', 'docs', 'scripts']:
     shutil.copytree(root / name, source / name, dirs_exist_ok=True)
-for name in ['CMakeLists.txt', 'README.md', '.gitignore']:
+for name in ['CMakeLists.txt', 'README.md', '.gitignore', 'LICENSE']:
     shutil.copy2(root / name, source / name)
 shutil.copy2(root / 'Audio/Prova-RMS.mp3', package / 'Prova-RMS.mp3')
 shutil.copy2(juce_dir / 'LICENSE.md', package / 'JUCE-LICENSE.md')
+shutil.copy2(root / 'LICENSE', package / 'LICENSE')
 subprocess.run(['tar', '-czf', str(package / 'Sorgenti/JUCE-8.0.13.tar.gz'),
                 '--exclude=.git', '-C', str(juce_dir), '.'], check=True)
 instructions = '''LUMA PLUGINS / macOS Apple Silicon (arm64)
@@ -76,8 +77,8 @@ In Sorgenti/Luma trovi codice, test e istruzioni di compilazione.
 Per usare la dipendenza inclusa, estrai Sorgenti/JUCE-8.0.13.tar.gz in una cartella
 JUCE, poi configura il progetto con -DJUCE_SOURCE_DIR=/percorso/JUCE.
 La licenza JUCE e le licenze delle sue dipendenze sono incluse nei sorgenti.
-La scelta della licenza di distribuzione del codice originale resta al suo autore;
-questo pacchetto non assegna una nuova licenza a tale codice.
+Il codice originale del progetto e distribuito con licenza MIT, inclusa in LICENSE
+e Sorgenti/Luma/LICENSE. JUCE e le altre dipendenze mantengono le proprie licenze.
 '''
 if args.universal:
     instructions = instructions.replace('macOS Apple Silicon (arm64)', 'macOS Universal (Intel x86_64 + Apple Silicon arm64)')
@@ -92,6 +93,6 @@ with zipfile.ZipFile(archive) as zipped:
         raise RuntimeError(f'Corrupt entry: {bad}')
     for name in ['VST3/Luma.vst3/Contents/MacOS/Luma', 'AU/Luma.component/Contents/MacOS/Luma',
                  'VST3/Luma RMS.vst3/Contents/MacOS/Luma RMS', 'AU/Luma RMS.component/Contents/MacOS/Luma RMS',
-                 'LEGGIMI.txt', 'Prova-RMS.mp3', 'Sorgenti/Luma/Source/Rms/Processor.cpp', 'Sorgenti/JUCE-8.0.13.tar.gz']:
+                 'LEGGIMI.txt', 'LICENSE', 'Sorgenti/Luma/LICENSE', 'Prova-RMS.mp3', 'Sorgenti/Luma/Source/Rms/Processor.cpp', 'Sorgenti/JUCE-8.0.13.tar.gz']:
         zipped.getinfo(package.name + '/' + name)
 print(f'Verified: {archive} ({archive.stat().st_size / 1024**2:.1f} MB)')

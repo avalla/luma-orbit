@@ -136,6 +136,9 @@ picco, reset, bypass e stato. Genera anche `build/Luma-RMS-preview.png`.
 Mancano validazione multi-host, firma Developer ID e notarizzazione.
 I nomi e gli identificatori del produttore sono provvisori.
 
-JUCE è una dipendenza esterna con licenza AGPL/commerciale: scegliere e rispettare
-la licenza appropriata prima della distribuzione. Nessuna licenza di distribuzione
-è assegnata al codice originale di questo prototipo.
+## Licenza
+
+Il codice originale di questo progetto è distribuito con [licenza MIT](LICENSE).
+JUCE e le altre dipendenze mantengono le proprie licenze: la licenza MIT del
+progetto non le sostituisce. JUCE è disponibile con licenza AGPL/commerciale;
+scegliere e rispettare la licenza appropriata prima della distribuzione dei plugin.
