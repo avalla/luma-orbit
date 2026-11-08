@@ -1,4 +1,4 @@
-# Luma Orbit 0.3.0 · plugin nativo
+# Luma Orbit 0.4.0 · plugin nativo
 
 Synth e sequencer generativo con batteria elettronica, sub intonato e cinque timbri:
 Glass, Rubber, Mist, Soft Keys e Bell. Il motore C++ genera l'audio direttamente
@@ -22,17 +22,35 @@ sono stati verificati. Firma ad-hoc, senza Developer ID o notarizzazione.
 Sync DAW per usare il trasporto interno. L'app standalone usa il trasporto interno.
 Le note vengono attivate sul campione della griglia degli ottavi; cambi di posizione
 o loop della DAW ripartono con una nuova frase deterministica. Non riceve MIDI esterno
-e non esporta MIDI in questa versione.
+ma esporta la frase corrente come file MIDI.
 
 **Flusso** sviluppa frasi da 8, 12 o 16 eventi. Esplora controlla variazione melodica,
-pause e durate. A zero, o con tutte le note bloccate, non introduce nuove variazioni.
+pause e durate. Con Energia neutra ed Esplora a zero, o con tutte le note bloccate, non introduce nuove variazioni.
 Gli accenti hanno un ciclo indipendente di 5, 7 o 8 passi. I controlli sono automatizzabili.
 
-**Cattura le note** salva gli otto gradi correnti nei parametri e disattiva Flusso.
-La frase in corso continua; al riavvio si parte dagli otto gradi salvati. Questa prima
-versione nativa non serializza le pause e le durate generate né la posizione del generatore.
-La DAW conserva controlli, timbro, scala, note e blocchi nella sessione. Il trasporto
-interno viene ripristinato fermo. Undo non è ancora presente.
+**Cattura la frase** conserva gli otto gradi, la sequenza completa di eventi,
+pause, durate e pattern batteria, e disattiva Flusso. La cattura riparte dall'inizio
+della frase; resta intatta dopo Stop, riapertura del preset e ripristino della sessione.
+Non conserva il punto di riproduzione né lo stato futuro del generatore casuale.
+La DAW conserva controlli, timbro, scala, note, blocchi e scene. Il trasporto interno
+viene ripristinato fermo. Undo nativo non è ancora presente.
+
+## Scene e movimento
+
+Apri **Effetti e scene**. I quattro slot **Intro, Groove, Apertura, Finale** sono
+inizialmente vuoti: **Salva qui** sostituisce esplicitamente il contenuto dello slot
+con l'idea corrente. Richiamare una scena ferma è immediato; durante l'ascolto il
+cambio avviene alla prossima battuta di quattro quarti. Con Sync DAW il tempo resta
+quello dell'host. Il cambio riguarda suono, frase, batteria, mixer ed effetti.
+Salva il preset o la sessione DAW per conservare tutti gli slot.
+
+- **Swing**: 0–0.60, ritarda gli ottavi dispari mantenendo la lunghezza della battuta.
+- **Probabilità colpi**: 0–1, probabilità di suonare ciascun evento melodico e colpo
+  di batteria. Le note bloccate suonano sempre, salvo le pause già nella frase.
+- **Energia**: 0.50 è neutra; modula luminosità, esplorazione e densità senza modificare
+  i loro valori salvati o il volume generale. Il ritmo evolve solo in Flusso.
+- **Fill**: arma una variazione di batteria di una battuta, dal prossimo inizio battuta.
+  Non riscrive il pattern salvato; rispetta le voci attive e la probabilità.
 
 Il **Sub intonato** segue le note due ottave sotto ed è attenuato durante la cassa.
 Ritmo, Cassa, Clap e Hi-hat si attivano separatamente. Il volume generale è smussato;
@@ -40,7 +58,7 @@ uscita mono o stereo (gli effetti aprono il campo stereo), zero latenza dichiara
 
 ## Effetti
 
-Il pulsante **Effetti** apre i controlli di delay e riverbero; **Torna al suono**
+Il pulsante **Effetti e scene** apre i controlli di delay e riverbero; **Torna al suono**
 ripristina i controlli del synth. Le quantità partono da zero, anche caricando una
 sessione di una versione precedente. Tutti i parametri degli effetti si salvano
 nella sessione e sono automatizzabili.
@@ -59,10 +77,25 @@ Gli stessi controlli sono disponibili sul web, con un motore audio distinto.
 **Volume synth**, **Sub intonato** e **Volume ritmo** regolano le tre parti.
 **Volume generale** è dopo delay e riverbero: a zero silenzia anche gli effetti.
 
-**Salva preset** crea un file `.orbit`; **Apri preset** ripristina controlli,
-effetti, scala, note e blocchi. Il salvataggio durante la riproduzione cattura le
-note correnti. Il caricamento ferma il trasporto interno. I preset non conservano
-pause, durate o posizione della frase generata; i file web JSON sono un formato distinto.
+**Salva preset** crea un file JSON `luma-orbit`, versione 2, leggibile anche sul web.
+**Apri preset** accetta JSON condivisi, vecchi JSON web e vecchi file binari `.orbit`.
+Un file non valido viene rifiutato prima di modificare lo strumento. Il caricamento
+ferma il trasporto interno; una DAW già in Play continua a comandare il trasporto.
+Il formato conserva frase, pattern, controlli e quattro scene; non conserva Undo,
+punto di riproduzione o il futuro casuale. I due motori hanno timbri analoghi, non
+waveform identiche. I vecchi preset ricevono Swing 0, Probabilità 1 ed Energia 0.50.
+
+**Esporta MIDI** salva tre tracce: melodia (canale 1), sub (2), batteria GM (10;
+cassa 36, clap 39, hi-hat 42), a 480 tick per quarto. Include tempo, pause, durate,
+accenti e swing della frase corrente. Esclude la casualità di Probabilità, il Fill,
+le future evoluzioni di Flusso, effetti e automazioni: è materiale da arrangiare nella DAW.
+
+**Registra 3 tracce** sceglie un nome base e crea `-synth.wav`, `-sub.wav`, `-drums.wav`.
+Scegli un nome base nuovo: file già esistenti non vengono sovrascritti.
+Sono tre file stereo PCM 16 bit, simultanei, dopo i volumi degli strumenti ma prima
+di saturazione del mix, effetti e volume generale. Il sub include l'attenuazione della cassa.
+Premi di nuovo per terminarli; massimo cinque minuti. Non sono una scomposizione
+matematicamente identica del mix, che ha saturazione ed effetti condivisi.
 
 **Registra WAV** sceglie il file di destinazione e registra il mix finale PCM 16 bit,
 alla frequenza di campionamento e con i canali dell'host. Premi **Ascolta** o avvia
@@ -83,5 +116,6 @@ ctest --test-dir build-universal --output-on-failure
 
 Aggiungi `-DJUCE_SOURCE_DIR=/percorso/JUCE` se disponi di JUCE 8.0.13 locale.
 I test verificano cinque timbri a tre sample rate, clock, blocchi di dimensioni diverse,
-blocchi delle note, trasporto host simulato, stato, preset, mixer, WAV e silenzio dopo Stop. La validazione
+blocchi delle note, trasporto host simulato, stato, preset condivisi, cattura dopo riavvio, scene a battuta, swing, probabilità,
+MIDI leggibile, mixer, WAV allineati e silenzio dopo Stop. La validazione
 in DAW reali resta necessaria. Il codice originale è MIT; JUCE mantiene la propria licenza.

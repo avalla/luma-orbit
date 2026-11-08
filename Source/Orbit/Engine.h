@@ -7,10 +7,15 @@
 namespace orbit {
 constexpr double pi=3.14159265358979323846;
 inline constexpr std::array<int,8> initialNotes{{0,4,2,6,4,7,2,3}};
+struct Event { int index=0,beats=1; bool rest=false; };
 struct Settings {
     std::array<int,8> notes=initialNotes;
     std::array<bool,8> locks{};
     double bpm=108;
+    float swing=0,probability=1,energy=.5f;
+    std::array<Event,16> pattern{};int patternLength=8;bool customPattern=false;
+    std::array<std::array<bool,3>,16> percussion{};bool customDrums=false;
+    std::array<float,16> percussionVelocity{{1,.6f,1,.6f,1,.6f,1,.6f,1,.6f,1,.6f,1,.6f,1,.6f}};
     float synthVolume=1.0f;
     float explore=.35f,tone=.62f,volume=.35f,density=.45f,depth=.65f,drumVolume=.55f,bass=.3f;
     int scale=0,sound=0,accents=5;
@@ -20,7 +25,6 @@ inline int midi(int degree,int scale) {
     constexpr int scales[3][8]={{57,59,60,62,64,65,67,69},{60,62,64,65,67,69,71,72},{57,60,62,64,67,69,72,74}};
     return scales[std::clamp(scale,0,2)][std::clamp(degree,0,7)];
 }
-struct Event { int index=0,beats=1; bool rest=false; };
 struct ToneVoice {
     double phase=0,frequency=440,age=0,duration=.35,attack=.006,filtered=0;
     float level=0; int shape=0;
@@ -53,6 +57,10 @@ public:
     uint64_t pulseCount=0;
     double beat=0;
     bool lastRest=false;
+    std::array<float,3> stems{};
+    bool fillPending=false;
+    const auto& drumsPattern()const{return drumPattern;}
+    const auto& drumVelocities()const{return velocities;}
     void prepare(double sampleRate){rate=sampleRate;reset(0);}
     void configure(const Settings& value){
         for(size_t i=0;i<notes.size();++i)if(value.notes[i]!=settings.notes[i])notes[i]=value.notes[i];
@@ -60,14 +68,14 @@ public:
     }
     void reset(double position){
         notes=settings.notes;for(int i=0;i<16;++i)phrase[size_t(i)]={i%8,1,false};
-        phraseLength=8;phraseNumber=1;eventIndex=remaining=accent=voiceIndex=0;currentStep=-1;
-        pulseCount=0;beat=position;nextPulse=std::ceil(position*2-1e-8)*.5;
+        phraseLength=settings.customPattern?settings.patternLength:8;if(settings.customPattern)phrase=settings.pattern;phraseNumber=1;eventIndex=remaining=accent=voiceIndex=0;currentStep=-1;
+        pulseCount=0;beat=position;gridPulse=int64_t(std::floor(position*2));nextPulse=gridPulse*.5+(gridPulse%2?.5*settings.swing:0);if(nextPulse<position-1e-8){++gridPulse;nextPulse=gridPulse*.5+(gridPulse%2?.5*settings.swing:0);}
         drumStep=int(std::fmod(std::floor(position*2),16)+16)%16;
-        rng=0x4c554d41u;noiseState=0x12345678u;silence();makeDrums();
+        rng=0x4c554d41u;chanceState=0xabcdef01u;noiseState=0x12345678u;fillRemaining=0;silence();makeDrums();if(settings.customDrums){drumPattern=settings.percussion;velocities=settings.percussionVelocity;}
     }
     void silence(){for(auto& v:voices)v.level=0;bassVoice.level=0;kickAge=clapAge=hatAge=10;kickPhase=lowNoise=0;}
     void evolve(){
-        const auto amount=settings.explore;
+        const auto amount=std::clamp(settings.explore+(settings.energy-.5f)*.6f,0.0f,1.0f);
         if(amount<=0||std::all_of(settings.locks.begin(),settings.locks.end(),[](bool x){return x;})){
             phraseLength=8;for(int i=0;i<8;++i)phrase[size_t(i)]={i,1,false};return;
         }
@@ -86,9 +94,9 @@ public:
         }
     }
     float sample(){
-        if(beat+1e-9>=nextPulse){pulse();nextPulse+=.5;}
+        if(beat+1e-9>=nextPulse){pulse();++gridPulse;nextPulse=gridPulse*.5+(gridPulse%2?.5*settings.swing:0);}
         beat+=settings.bpm/(60*rate);
-        double melody=0;for(auto& v:voices)melody+=v.sample(rate,settings.tone);
+        double melody=0;for(auto& v:voices)melody+=v.sample(rate,std::clamp(settings.tone+(settings.energy-.5f)*.5f,0.0f,1.0f));
         const float sub=bassVoice.sample(rate,.05f)*settings.bass;
         const double noise=double(nextRandom(noiseState))/4294967296.0*2-1;
         lowNoise+=.22*(noise-lowNoise);
@@ -102,31 +110,38 @@ public:
         }
         if(clapAge<.2){const double flutter=clapAge<.042?(.3+.7*std::pow(std::sin(pi*clapAge/.014),2)):1;clap=(noise-lowNoise)*std::exp(-clapAge*35)*flutter*.24;clapAge+=1/rate;}
         if(hatAge<.08){hat=(noise-lowNoise)*std::exp(-hatAge*100)*.1;hatAge+=1/rate;}
-        const double percussion=settings.drums?settings.drumVolume*((settings.kick?kick:0)+(settings.clap?clap:0)+(settings.hat?hat:0)):0;
+        const double percussion=settings.drums?settings.drumVolume*((settings.kick?kick*kickVelocity:0)+(settings.clap?clap*clapVelocity:0)+(settings.hat?hat*hatVelocity:0)):0;
         // Bass ducks during the kick; fixed headroom and soft saturation bound output.
         const double duck=settings.drums&&settings.kick?1-.65*std::exp(-kickAge*20):1;
         smoothedVolume+=(settings.volume-smoothedVolume)*std::min(1.0,1/(rate*.02));
-        return float(std::tanh((melody*settings.synthVolume+sub*duck+percussion)*smoothedVolume));
+        stems={{float(melody*settings.synthVolume),float(sub*duck),float(percussion)}};
+        return float(std::tanh((stems[0]+stems[1]+stems[2])*smoothedVolume));
     }
 private:
     double rate=44100,nextPulse=0,kickAge=10,clapAge=10,hatAge=10,kickPhase=0,lowNoise=0,smoothedVolume=0;
     std::array<ToneVoice,8> voices{};ToneVoice bassVoice;
     std::array<std::array<bool,3>,16> drumPattern{};
+    std::array<float,16> velocities{{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}};
+    float kickVelocity=1,clapVelocity=1,hatVelocity=1;
     int eventIndex=0,remaining=0,accent=0,drumStep=0,voiceIndex=0;
+    int64_t gridPulse=0;int fillRemaining=0;
+    uint32_t chanceState=0xabcdef01u;
+    bool chance(){return double(nextRandom(chanceState))/4294967296.0<settings.probability;}
     uint32_t rng=0x4c554d41u,noiseState=0x12345678u;
     static uint32_t nextRandom(uint32_t& value){value=value*1664525u+1013904223u;return value;}
     double random(){return double(nextRandom(rng))/4294967296.0;}
-    void makeDrums(){for(int i=0;i<16;++i)drumPattern[size_t(i)]={{i==0||i==8||(i%2==0&&random()<settings.density*.25),i==4||i==12,i%2==0||random()<settings.density}};}
+    void makeDrums(){velocities.fill(1);for(int i=0;i<16;++i)drumPattern[size_t(i)]={{i==0||i==8||(i%2==0&&random()<std::clamp(settings.density+(settings.energy-.5f)*.8f,0.0f,1.0f)*.25),i==4||i==12,i%2==0||random()<std::clamp(settings.density+(settings.energy-.5f)*.8f,0.0f,1.0f)}};}
     void pulse(){
         ++pulseCount;
-        if(drumStep==0&&settings.flow&&settings.explore>0)makeDrums();
-        const auto hit=drumPattern[size_t(drumStep)];drumStep=(drumStep+1)%16;
-        if(settings.drums){if(hit[0]&&settings.kick){kickAge=0;kickPhase=0;}if(hit[1]&&settings.clap)clapAge=0;if(hit[2]&&settings.hat)hatAge=0;}
+        if(drumStep==0&&(!settings.customDrums||pulseCount>1)&&settings.flow&&std::clamp(settings.explore+(settings.energy-.5f)*.6f,0.0f,1.0f)>0)makeDrums();
+        if(drumStep%8==0&&fillPending){fillRemaining=8;fillPending=false;}
+        const auto velocity=velocities[size_t(drumStep)];auto hit=drumPattern[size_t(drumStep)];if(fillRemaining>0){hit[2]=true;if(drumStep%4>=2)hit[1]=true;--fillRemaining;}drumStep=(drumStep+1)%16;
+        if(settings.drums){if(hit[0]&&settings.kick&&chance()){kickAge=0;kickPhase=0;kickVelocity=velocity;}if(hit[1]&&settings.clap&&chance()){clapAge=0;clapVelocity=velocity;}if(hit[2]&&settings.hat&&chance()){hatAge=0;hatVelocity=velocity;}}
         if(remaining>0){--remaining;return;}
         if(eventIndex>=phraseLength){eventIndex=0;if(settings.flow){evolve();++phraseNumber;}}
         const auto event=phrase[size_t(eventIndex++)];currentStep=event.index;currentAccent=accent%settings.accents;lastRest=event.rest;
         accent+=event.beats;remaining=event.beats-1;
-        if(event.rest)return;
+        if(event.rest||(!settings.locks[size_t(event.index)]&&!chance()))return;
         const int note=midi(notes[size_t(event.index)],settings.scale);
         auto& v=voices[size_t(voiceIndex++%8)];v={};v.shape=settings.sound;
         v.frequency=440*std::pow(2.0,(note-(settings.sound==1?12:0)-69)/12.0);

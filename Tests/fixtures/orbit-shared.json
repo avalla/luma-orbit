@@ -1,0 +1,229 @@
+{
+  "format": "luma-orbit",
+  "version": 2,
+  "base": [
+    0,
+    4,
+    2,
+    6,
+    4,
+    7,
+    2,
+    3
+  ],
+  "notes": [
+    0,
+    4,
+    2,
+    6,
+    4,
+    7,
+    2,
+    3
+  ],
+  "locks": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "sound": "bell",
+  "scale": "minor",
+  "flow": false,
+  "drumsEnabled": true,
+  "drumEnabled": {
+    "kick": true,
+    "clap": true,
+    "hat": true
+  },
+  "controls": {
+    "bpm": 120,
+    "amount": 0,
+    "tone": 62,
+    "bass": 30,
+    "volume": 35,
+    "density": 0,
+    "depth": 0,
+    "drum-volume": 55,
+    "synth-volume": 100,
+    "delay-mix": 0,
+    "delay-feedback": 0,
+    "room-mix": 0,
+    "room-size": 0,
+    "delay-division": 0,
+    "accent-length": 5,
+    "swing": 40,
+    "probability": 100,
+    "energy": 50
+  },
+  "phrase": [
+    {
+      "index": 0,
+      "beats": 2,
+      "rest": false
+    },
+    {
+      "index": 1,
+      "beats": 1,
+      "rest": true
+    },
+    {
+      "index": 2,
+      "beats": 1,
+      "rest": false
+    },
+    {
+      "index": 3,
+      "beats": 2,
+      "rest": false
+    },
+    {
+      "index": 4,
+      "beats": 1,
+      "rest": false
+    },
+    {
+      "index": 5,
+      "beats": 1,
+      "rest": false
+    },
+    {
+      "index": 6,
+      "beats": 2,
+      "rest": true
+    },
+    {
+      "index": 7,
+      "beats": 1,
+      "rest": false
+    },
+    {
+      "index": 0,
+      "beats": 1,
+      "rest": false
+    },
+    {
+      "index": 1,
+      "beats": 2,
+      "rest": false
+    },
+    {
+      "index": 2,
+      "beats": 1,
+      "rest": false
+    },
+    {
+      "index": 3,
+      "beats": 1,
+      "rest": false
+    }
+  ],
+  "drumPattern": [
+    {
+      "kick": true,
+      "clap": false,
+      "hat": true,
+      "velocity": 1
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": false,
+      "velocity": 0.6
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": true,
+      "velocity": 1
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": false,
+      "velocity": 0.6
+    },
+    {
+      "kick": false,
+      "clap": true,
+      "hat": true,
+      "velocity": 1
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": false,
+      "velocity": 0.6
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": true,
+      "velocity": 1
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": false,
+      "velocity": 0.6
+    },
+    {
+      "kick": true,
+      "clap": false,
+      "hat": true,
+      "velocity": 1
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": false,
+      "velocity": 0.6
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": true,
+      "velocity": 1
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": false,
+      "velocity": 0.6
+    },
+    {
+      "kick": false,
+      "clap": true,
+      "hat": true,
+      "velocity": 1
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": false,
+      "velocity": 0.6
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": true,
+      "velocity": 1
+    },
+    {
+      "kick": false,
+      "clap": false,
+      "hat": false,
+      "velocity": 0.6
+    }
+  ],
+  "scenes": [
+    null,
+    null,
+    null,
+    null
+  ]
+}

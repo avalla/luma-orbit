@@ -3,9 +3,14 @@
 **[Apri Orbit](https://orbit.avalla.dev)**: synth e sequencer generativo nel browser,
 con batteria elettronica e pianificazione sul clock audio Web Audio.
 
-**Novità 0.3.0:** delay sincronizzato, riverbero, mixer synth/sub/batteria,
-preset su file e registrazione WAV fino a cinque minuti, sia sul web sia nel nativo.
-I preset web (`.json`) e nativi (`.orbit`) usano formati distinti.
+**Novità 0.4.0:** quattro scene a tempo, swing, probabilità, macro Energia e Fill.
+Cattura completa delle frasi, preset JSON condivisi tra web e plugin, export MIDI
+(synth/sub/batteria) e registrazione di tre WAV separati e allineati.
+Restano disponibili delay, riverbero, mixer e registrazione del mix fino a cinque minuti.
+
+**Per iniziare:** costruisci un suono, premi **Salva qui** sotto Intro o Groove,
+poi richiama la scena mentre suona. Nel plugin trovi i nuovi comandi in **Effetti e scene**.
+Salva il preset per conservare anche i quattro slot.
 
 Il repository contiene Orbit web e tre plugin nativi macOS: Luma Orbit, Luma e Luma RMS.
 
@@ -32,7 +37,7 @@ Il pacchetto dedicato è `build/Delivery/Luma-Orbit-macOS-Universal.zip`.
 - [Tutte le release](https://github.com/avalla/luma-orbit/releases).
 - [Build di sviluppo in GitHub Actions](https://github.com/avalla/luma-orbit/actions/workflows/orbit-build.yml): apri una build riuscita e scarica lo ZIP in **Artifacts** (login GitHub richiesto, conservazione 30 giorni).
 
-La workflow **Build Luma Orbit** parte sulle modifiche native in `main`, manualmente
+La workflow **Build Luma Orbit** parte sulle modifiche native o web in `main`, manualmente
 con **Run workflow**, oppure sui tag `orbit-v*`. I tag pubblicano una release solo
 dopo compilazione, test e verifica del pacchetto. Le build hanno firma ad-hoc;
 non sono notarizzate da Apple. Le release restano scaricabili senza login.

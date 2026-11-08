@@ -10,3 +10,5 @@
 .session-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:20px}.session-actions a{color:var(--lime);font-size:18px;padding:10px}#record[aria-pressed=true]{background:var(--peach);color:var(--bg)}
 
 .audio-status{max-width:none;margin:0;padding:12px 32px;border-bottom:1px solid var(--line);font-size:16px}
+
+.scene-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:24px}.scene-grid>div{display:flex;flex-direction:column;gap:8px}.scene-grid button{min-height:44px}#stem-downloads{display:flex;flex-wrap:wrap;gap:20px}#stem-downloads a{font-size:17px;color:var(--ink, #eeeee3)}@media(max-width:650px){.scene-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

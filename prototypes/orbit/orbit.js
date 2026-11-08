@@ -5,9 +5,10 @@ const scales={minor:[57,59,60,62,64,65,67,69],major:[60,62,64,65,67,69,71,72],pe
 const initial=[0,4,2,6,4,7,2,3];
 let base=[...initial],notes=[...initial],locks=Array(8).fill(false),history=[],sound='glass',running=false,step=0,accentStep=0,context,master,timer,generation=0,selectedScale='minor';
 const voices=new Set();
+let subBus,scenes=Array(4).fill(null),pendingScene=-1,activeScene=-1,fillPending=false,fillUntil=0;
 let effects,synthBus,recorderNode,recording=false,recordFinishing=false,recordChunks=[],recordSamples=0,wavUrl;
 const controlValues=()=>Object.fromEntries(Object.keys(OrbitSession.ranges).map(id=>[id,Number($(id).value)]));
-let audioClock,animationFrame,remainingBeats=0;
+let audioClock,animationFrame,remainingBeats=0,pairSwing=0;
 const visualQueue=[];
 const straight=()=>Array.from({length:8},(_,index)=>({index,rest:false,beats:1}));
 let flow=true,phrase=straight(),phraseNumber=1;
@@ -45,26 +46,31 @@ function render(){
  if(focusIndex!==undefined)$('steps').children[focusIndex]?.querySelector(focusTag)?.focus();
 }
 function announce(message){$('status').textContent=message;}
-function stop(){finishRecording();running=false;generation++;clearInterval(timer);audioClock?.stop();cancelAnimationFrame(animationFrame);visualQueue.length=0;remainingBeats=0;kit?.stop();voices.forEach(v=>{try{v.stop();}catch{}});voices.clear();if(effects){effects.reset();effects.update(controlValues());}$('play').textContent='▶ Ascolta';$('playing-note').textContent='IN PAUSA';document.querySelectorAll('.current').forEach(e=>e.classList.remove('current'));}
+function stop(){finishStems();finishRecording();pendingScene=-1;fillPending=false;fillUntil=0;updateScenes();running=false;generation++;clearInterval(timer);audioClock?.stop();cancelAnimationFrame(animationFrame);visualQueue.length=0;remainingBeats=0;kit?.stop();voices.forEach(v=>{try{v.stop();}catch{}});voices.clear();if(effects){effects.reset();effects.update(controlValues());}$('audio-status').textContent='Audio in pausa.';$('play').textContent='▶ Ascolta';$('playing-note').textContent='IN PAUSA';document.querySelectorAll('.current').forEach(e=>e.classList.remove('current'));}
 function schedulePulse(time){
- const interval=30/Math.max(40,Math.min(200,Number($('bpm').value)||108));
- if(drumBeat%16===0&&flow&&Number($('amount').value)>0)drumPattern=OrbitDrums.pattern(Number($('density').value)/100);
- const hit=drumPattern[drumBeat%16];
- if(drumsEnabled)for(const kind of ['kick','clap','hat'])if(hit[kind]&&drumEnabled[kind])kit.trigger(kind,time,hit.velocity,Number($('depth').value)/100);
+ let sceneApplied=false;
+ if(drumBeat%8===0){if(pendingScene>=0){const index=pendingScene;pendingScene=-1;applyPreset(scenes[index],false,time);sceneApplied=true;activeScene=index;updateScenes();}if(fillPending){fillUntil=drumBeat+8;fillPending=false;}}
+ const c=OrbitSession.performance(controlValues());
+ if(drumBeat%2===0)pairSwing=c.swing;
+ const interval=60/c.bpm*OrbitSession.pulseBeats(drumBeat,pairSwing);
+ const filling=drumBeat<fillUntil;
+ if(!sceneApplied&&drumBeat%16===0&&flow&&c.amount>0)drumPattern=OrbitDrums.pattern(c.density/100);
+ const hit={...drumPattern[drumBeat%16]};if(filling){hit.hat=true;if(drumBeat%4>=2)hit.clap=true;}
+ if(drumsEnabled)for(const kind of ['kick','clap','hat'])if(hit[kind]&&drumEnabled[kind]&&Math.random()*100<c.probability)kit.trigger(kind,time,hit.velocity,c.depth/100);
  drumBeat++;
  if(remainingBeats>0){remainingBeats--;return interval;}
  if(step>=phrase.length){
   step=0;
-  if(flow){const next=OrbitFlow.createPhrase(notes,locks,Number($('amount').value)/100);notes=next.notes;phrase=next.events;phraseNumber++;render();}
+  if(flow){const next=OrbitFlow.createPhrase(notes,locks,c.amount/100);notes=next.notes;phrase=next.events;phraseNumber++;render();}
  }
  const event=phrase[step],i=event.index,a=accentStep%Number($('accent-length').value);
  visualQueue.push({time,i,a,position:step+1,length:phrase.length,label:event.rest?'PAUSA':noteName(midi(notes[i]))});
- if(!event.rest){
+ if(!event.rest&&(locks[i]||Math.random()*100<c.probability)){
  const now=time,osc=context.createOscillator(),gain=context.createGain(),filter=context.createBiquadFilter();
  const duration=sound==='mist'?.75:sound==='rubber'?.19:sound==='bell'?1.2:.5;
  osc.type=sound==='mist'?'sawtooth':sound==='rubber'?'triangle':'sine';
  if(sound==='keys')osc.setPeriodicWave(context.createPeriodicWave(new Float32Array([0,0,0]),new Float32Array([0,.75,.25])));osc.frequency.value=440*2**((midi(notes[i])-(sound==='rubber'?12:0)-69)/12);
- filter.type='lowpass';filter.frequency.value=300+Number($('tone').value)**2*1.3;filter.Q.value=sound==='rubber'?3:.5;
+ filter.type='lowpass';filter.frequency.value=300+c.tone**2*1.3;filter.Q.value=sound==='rubber'?3:.5;
  gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(a%2===0?.23:.12,now+(sound==='mist'?.08:.006));gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
  if(sound==='bell'){
   const mod=context.createOscillator(),depth=context.createGain();mod.frequency.value=osc.frequency.value*2;
@@ -77,7 +83,7 @@ function schedulePulse(time){
   const sub=context.createOscillator(),subGain=context.createGain();sub.type='sine';sub.frequency.value=440*2**((midi(notes[i])-24-69)/12);
   const level=.22*bassLevel,duck=drumsEnabled&&drumEnabled.kick&&hit.kick?.35:1;
   subGain.gain.setValueAtTime(0,now);subGain.gain.linearRampToValueAtTime(level*duck,now+.008);subGain.gain.linearRampToValueAtTime(level*.7,now+.08);subGain.gain.exponentialRampToValueAtTime(.0001,now+.65);
-  sub.connect(subGain).connect(effects.input);sub.start(now);sub.stop(now+.67);voices.add(sub);sub.onended=()=>{voices.delete(sub);sub.disconnect();subGain.disconnect();};
+  sub.connect(subGain).connect(subBus);sub.start(now);sub.stop(now+.67);voices.add(sub);sub.onended=()=>{voices.delete(sub);sub.disconnect();subGain.disconnect();};
  }
  osc.connect(filter).connect(gain).connect(synthBus);osc.start(now);osc.stop(now+duration+.02);voices.add(osc);osc.onended=()=>{voices.delete(osc);osc.disconnect();filter.disconnect();gain.disconnect();};
  }
@@ -109,7 +115,7 @@ async function play(){
  const musicPlayback=requestMusicPlayback();
  $('audio-status').hidden=false;
  $('audio-status').textContent=musicPlayback?'Avvio audio…':'Su iPhone, se non senti audio, disattiva la modalità silenziosa e alza il volume multimediale.';
- try{context??=new (window.AudioContext||window.webkitAudioContext)();if(!master){master=context.createGain();master.connect(context.destination);effects=new OrbitEffects(context,master);synthBus=context.createGain();synthBus.connect(effects.input);}effects.update(controlValues());synthBus.gain.value=Number($('synth-volume').value)/100;kit??=new OrbitDrums.Kit(context,effects.input);kit.bus.gain.value=Number($('drum-volume').value)/100;master.gain.value=Number($('volume').value)/100;await context.resume();if(token!==generation)return;if(context.state!=='running')throw new Error('Audio suspended');if(musicPlayback)$('audio-status').textContent='Riproduzione musicale attiva.';running=true;step=accentStep=drumBeat=0;remainingBeats=0;visualQueue.length=0;$('play').textContent='■ Ferma';audioClock=new OrbitAudioClock(context,schedulePulse);audioClock.start();timer=setInterval(()=>{if(context.state!=='running'){stop();return;}audioClock.pump();},25);drawPlayhead();}
+ try{context??=new (window.AudioContext||window.webkitAudioContext)();if(!master){master=context.createGain();master.connect(context.destination);effects=new OrbitEffects(context,master);synthBus=context.createGain();synthBus.connect(effects.input);subBus=context.createGain();subBus.connect(effects.input);}effects.update(controlValues());synthBus.gain.value=Number($('synth-volume').value)/100;kit??=new OrbitDrums.Kit(context,effects.input);kit.bus.gain.value=Number($('drum-volume').value)/100;master.gain.value=Number($('volume').value)/100;await context.resume();if(token!==generation)return;if(context.state!=='running')throw new Error('Audio suspended');if(musicPlayback)$('audio-status').textContent='Riproduzione musicale attiva.';running=true;step=accentStep=drumBeat=0;remainingBeats=0;visualQueue.length=0;$('play').textContent='■ Ferma';audioClock=new OrbitAudioClock(context,schedulePulse);audioClock.start();timer=setInterval(()=>{if(context.state!=='running'){stop();return;}audioClock.pump();},25);drawPlayhead();}
  catch{stop();$('audio-status').textContent='Audio non avviato. Tocca di nuovo Ascolta; se necessario, apri questa pagina direttamente in Safari.';announce('Audio non disponibile. Riprova con Ascolta.');}
 }
 $('play').onclick=play;
@@ -137,24 +143,31 @@ for(const id of ['synth-volume','delay-mix','delay-feedback','room-mix','room-si
 };
 $('delay-division').onchange=()=>effects?.update(controlValues());
 function download(blob,name){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}
-$('save-preset').onclick=()=>{
- const preset={format:'luma-orbit-web',version:1,base,notes,locks,sound,scale:selectedScale,flow,phrase,drumPattern,drumsEnabled,drumEnabled,controls:controlValues()};
- download(new Blob([JSON.stringify(OrbitSession.validate(preset),null,2)],{type:'application/json'}),'Orbit-preset.json');announce('Preset salvato nel file Orbit-preset.json.');
-};
+function currentPreset(includeScenes=true){
+ const p={format:'luma-orbit',version:2,base:[...base],notes:[...notes],locks:[...locks],sound,scale:selectedScale,flow,phrase:phrase.map(e=>({...e})),drumPattern:drumPattern.map(h=>({...h})),drumsEnabled,drumEnabled:{...drumEnabled},controls:controlValues()};
+ if(includeScenes)p.scenes=scenes;return OrbitSession.validate(p);
+}
+function applyPreset(p,replaceScenes=true,time=context?.currentTime){
+ p=OrbitSession.validate(p);({base,notes,locks,sound,flow,phrase,drumPattern,drumsEnabled}=p);Object.assign(drumEnabled,p.drumEnabled);selectedScale=p.scale;$('scale').value=p.scale;
+ for(const [id,value] of Object.entries(p.controls))if(Object.hasOwn(OrbitSession.ranges,id)){$(id).value=value;if($(`${id}-value`))$(`${id}-value`).textContent=`${value}%`;}
+ document.querySelector(`[data-sound="${sound}"]`).click();
+ $('drums-toggle').setAttribute('aria-pressed',String(drumsEnabled));$('drums-toggle').textContent=drumsEnabled?'Ritmo attivo':'Ritmo spento';
+ document.querySelectorAll('[data-drum]').forEach(b=>b.setAttribute('aria-pressed',String(drumEnabled[b.dataset.drum])));
+ if(replaceScenes){scenes=p.scenes||Array(4).fill(null);activeScene=-1;pendingScene=-1;}
+ phraseNumber=1;step=accentStep=remainingBeats=0;
+ effects?.update(controlValues(),time);if(master)master.gain.setTargetAtTime(p.controls.volume/100,time,.02);if(synthBus)synthBus.gain.setTargetAtTime(p.controls['synth-volume']/100,time,.02);if(kit)kit.bus.gain.setTargetAtTime(p.controls['drum-volume']/100,time,.02);
+ render();updateScenes();
+}
+function updateScenes(){document.querySelectorAll('[data-scene]').forEach(b=>{const i=Number(b.dataset.scene);b.disabled=!scenes[i];b.setAttribute('aria-pressed',String(i===activeScene));});$('scene-status').textContent=pendingScene>=0?'Scena in attesa della prossima battuta.':activeScene>=0?`Scena attiva: ${['Intro','Groove','Apertura','Finale'][activeScene]}.`:'Salva la tua idea in una scena. Cambio alla prossima battuta di 4/4.';}
+for(const id of ['swing','probability','energy'])$(id).oninput=()=>{$(`${id}-value`).textContent=`${$(id).value}%`;};
+document.querySelectorAll('[data-save-scene]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.saveScene);scenes[i]=currentPreset(false);activeScene=i;updateScenes();announce('Scena salvata. Salva il preset per conservarla su file.');});
+document.querySelectorAll('[data-scene]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.scene);if(!scenes[i])return;if(running){pendingScene=i;updateScenes();}else{applyPreset(scenes[i],false);activeScene=i;updateScenes();}});
+$('fill').onclick=()=>{fillPending=true;announce('Fill pronto per la prossima battuta.');};
+$('export-midi').onclick=()=>{download(new Blob([OrbitSession.midiFile(currentPreset())],{type:'audio/midi'}),'Orbit.mid');announce('MIDI esportato: synth, sub e batteria.');};
+$('save-preset').onclick=()=>{download(new Blob([JSON.stringify(currentPreset(),null,2)],{type:'application/json'}),'Orbit-preset.json');announce('Preset condiviso salvato.');};
 $('load-preset').onclick=()=>$('preset-file').click();
-$('preset-file').onchange=async()=>{
- const file=$('preset-file').files[0];if(!file)return;
- try{
-  if(file.size>65536)throw new Error('File troppo grande');const p=OrbitSession.validate(JSON.parse(await file.text()));
-  stop();history=[];({base,notes,locks,sound,flow,phrase,drumPattern,drumsEnabled}=p);Object.assign(drumEnabled,p.drumEnabled);selectedScale=p.scale;$('scale').value=p.scale;
-  for(const [id,value] of Object.entries(p.controls))if(Object.hasOwn(OrbitSession.ranges,id)){$(id).value=value;if($(`${id}-value`))$(`${id}-value`).textContent=`${value}%`;}
-  document.querySelector(`[data-sound="${sound}"]`).click();
-  $('drums-toggle').setAttribute('aria-pressed',String(drumsEnabled));$('drums-toggle').textContent=drumsEnabled?'Ritmo attivo':'Ritmo spento';
-  document.querySelectorAll('[data-drum]').forEach(b=>b.setAttribute('aria-pressed',String(drumEnabled[b.dataset.drum])));
-  $('drum-status').textContent=drumsEnabled?'Il ritmo accompagna il synth.':'Solo synth.';
-  phraseNumber=1;step=accentStep=drumBeat=remainingBeats=0;render();announce('Preset caricato. Premi Ascolta.');
- }catch{announce('Preset non valido: scegli un file JSON salvato da Orbit web.');}finally{$('preset-file').value='';}
-};
+$('preset-file').onchange=async()=>{const file=$('preset-file').files[0];if(!file)return;try{if(file.size>262144)throw new Error('File troppo grande');const p=OrbitSession.validate(JSON.parse(await file.text()));stop();history=[];drumBeat=0;applyPreset(p);announce('Preset caricato. Premi Ascolta.');}catch{announce('Preset non valido: scegli un preset JSON Orbit.');}finally{$('preset-file').value='';}};
+updateScenes();
 function finishRecording(){if(!recording)return;recording=false;recordFinishing=true;recorderNode.port.postMessage('stop');$('record').disabled=true;}
 $('record').onclick=async()=>{
  if(recording){finishRecording();return;}if(recordFinishing)return;$('record').disabled=true;
@@ -175,4 +188,17 @@ $('record').onclick=async()=>{
   if(!running)throw new Error('Riproduzione interrotta');recordChunks=[];recordSamples=0;recording=true;recorderNode.port.postMessage('start');$('record').textContent='■ Termina registrazione';$('record').setAttribute('aria-pressed','true');$('record-status').textContent='REC · registrazione del mix in corso';
  }catch{$('record-status').textContent='Registrazione non disponibile: usa Orbit via HTTPS o localhost in un browser aggiornato.';}
  finally{if(!recordFinishing)$('record').disabled=false;}
+};
+
+let stemsNode,stemsRecording=false,stemsFinishing=false,stemChunks=[[],[],[]],stemUrls=[];
+function finishStems(){if(!stemsRecording)return;stemsRecording=false;stemsFinishing=true;stemsNode.port.postMessage('stop');$('record-stems').disabled=true;}
+$('record-stems').onclick=async()=>{
+ if(stemsRecording){finishStems();return;}if(stemsFinishing)return;$('record-stems').disabled=true;
+ try{
+  if(!running)await play();if(!running)throw new Error('Audio non disponibile');
+  if(!stemsNode){await context.audioWorklet.addModule('stems-worklet.js');stemsNode=new AudioWorkletNode(context,'orbit-stems',{numberOfInputs:3,numberOfOutputs:1,outputChannelCount:[2]});synthBus.connect(stemsNode,0,0);subBus.connect(stemsNode,0,1);kit.bus.connect(stemsNode,0,2);stemsNode.connect(context.destination);
+   stemsNode.port.onmessage=({data})=>{if(data.chunk)stemChunks[data.track].push(data.chunk);if(data.done){stemsRecording=stemsFinishing=false;stemUrls.forEach(u=>URL.revokeObjectURL(u));stemUrls=[];$('stem-downloads').replaceChildren();for(let i=0;i<3;i++){const url=URL.createObjectURL(new Blob([OrbitSession.wavHeader(data.frames*2,context.sampleRate),...stemChunks[i]],{type:'audio/wav'}));stemUrls.push(url);const a=document.createElement('a');a.href=url;a.download=`Orbit-${['synth','sub','drums'][i]}.wav`;a.textContent=['Scarica synth','Scarica sub','Scarica batteria'][i];$('stem-downloads').append(a);}stemChunks=[[],[],[]];$('record-stems').disabled=false;$('record-stems').textContent='● Registra tracce separate';$('stem-status').textContent=`Tre WAV allineati: ${(data.frames/context.sampleRate).toFixed(1)} secondi. Scaricali prima di chiudere la pagina.`;}};
+  }
+  if(!running)throw new Error('Riproduzione interrotta');stemChunks=[[],[],[]];stemsRecording=true;stemsNode.port.postMessage('start');$('record-stems').textContent='■ Salva le tre tracce';$('stem-status').textContent='Registrazione di synth, sub e batteria in corso · massimo 5 minuti.';
+ }catch{$('stem-status').textContent='Registrazione non disponibile. Usa HTTPS o localhost.';}finally{if(!stemsFinishing)$('record-stems').disabled=false;}
 };

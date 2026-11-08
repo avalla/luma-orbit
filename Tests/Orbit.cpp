@@ -32,6 +32,33 @@ int main(){
         for(int n=0;n<100;++n)e.evolve();check(e.notes==settings.notes,"All locks not respected");
         settings.locks.fill(false);settings.explore=0;e.configure(settings);e.reset(0);e.evolve();check(e.notes==settings.notes&&e.phraseLength==8,"Zero exploration changed phrase");
         // The host clock, not block partitioning, must determine the rendered audio.
+        for(float swing:{0.0f,.4f,.6f}){
+            orbit::Engine swung;orbit::Settings groove;groove.bpm=120;groove.swing=swing;groove.flow=false;swung.configure(groove);swung.prepare(48000);
+            std::vector<int> onsets;uint64_t previous=0;
+            for(int i=0;i<96001;++i){swung.sample();if(swung.pulseCount!=previous){onsets.push_back(i);previous=swung.pulseCount;}}
+            check(onsets.size()==9&&onsets[8]==96000,"Swing changed bar length");check(std::abs(onsets[1]-int(std::round(12000*(1+swing))))<=1,"Swing offbeat misplaced");
+        }
+        orbit::Engine probabilityEngine;orbit::Settings probabilitySettings;probabilitySettings.probability=0;probabilityEngine.configure(probabilitySettings);probabilityEngine.prepare(48000);
+        for(int i=0;i<24000;++i)check(probabilityEngine.sample()==0,"Zero probability produced audio");
+        probabilitySettings.locks.fill(true);probabilitySettings.drums=false;probabilityEngine.configure(probabilitySettings);probabilityEngine.reset(0);double lockedEnergy=0;for(int i=0;i<1000;++i)lockedEnergy+=std::abs(probabilityEngine.sample());check(lockedEnergy>0,"Probability silenced locked notes");
+        orbit::Engine fillEngine;orbit::Settings fillSettings;fillSettings.bpm=120;fillSettings.flow=false;fillSettings.synthVolume=fillSettings.bass=0;fillSettings.customDrums=true;fillEngine.configure(fillSettings);fillEngine.prepare(48000);fillEngine.fillPending=true;double fillEnergy=0;
+        for(int i=0;i<192000;++i){const auto sample=fillEngine.sample();if(i<96000)fillEnergy+=std::abs(sample);if(i>125000)check(sample==0,"Fill lasted beyond one bar and decay");}check(fillEnergy>0,"Fill produced no drum hits");check(fillEngine.drumsPattern()==fillSettings.percussion,"Fill rewrote saved drum pattern");
+        const auto sharedFile=File(__FILE__).getParentDirectory().getChildFile("fixtures/orbit-shared.json");
+        LumaOrbit shared;check(shared.loadPreset(sharedFile),"Shared web preset rejected");auto captured=shared.currentSnapshot();
+        check(captured.settings.patternLength==12&&captured.settings.pattern[1].rest&&captured.settings.pattern[0].beats==2,"Shared phrase lost rhythm");
+        auto invalid=orbit::toJson(captured);invalid["controls"].getDynamicObject()->setProperty("probability",101);orbit::Snapshot untouched;check(!orbit::fromJson(invalid,untouched),"Invalid probability accepted");
+        auto legacyWeb=orbit::toJson(captured);legacyWeb.getDynamicObject()->setProperty("format","luma-orbit-web");legacyWeb.getDynamicObject()->setProperty("version",1);for(const char* id:{"swing","probability","energy"})legacyWeb["controls"].getDynamicObject()->removeProperty(id);check(orbit::fromJson(legacyWeb,untouched)&&untouched.settings.swing==0&&untouched.settings.probability==1&&untouched.settings.energy==.5f,"Legacy web migration failed");
+        shared.prepareToPlay(48000,256);set(shared,"sync",0);set(shared,"run",1);AudioBuffer<float> sharedAudio(2,256);MidiBuffer sharedMidi;shared.processBlock(sharedAudio,sharedMidi);shared.capture();shared.processBlock(sharedAudio,sharedMidi);shared.serviceScenes();
+        set(shared,"run",0);shared.processBlock(sharedAudio,sharedMidi);set(shared,"run",1);shared.processBlock(sharedAudio,sharedMidi);
+        check(shared.currentSnapshot().settings.patternLength==12&&shared.currentSnapshot().settings.pattern[1].rest,"Capture lost phrase after restart");
+        MemoryBlock capturedState;shared.getStateInformation(capturedState);LumaOrbit capturedRestored;capturedRestored.setStateInformation(capturedState.getData(),int(capturedState.getSize()));check(capturedRestored.currentSnapshot().settings.patternLength==12,"DAW restore lost phrase");
+        set(shared,"run",0);shared.processBlock(sharedAudio,sharedMidi);set(shared,"tone",.2f);shared.saveScene(0);set(shared,"tone",.8f);shared.saveScene(1);shared.recallScene(0);check(std::abs(shared.state.getRawParameterValue("tone")->load()-.2f)<.001f,"Stopped scene recall failed");
+        set(shared,"run",1);shared.processBlock(sharedAudio,sharedMidi);shared.recallScene(1);for(int i=0;i<373;++i)shared.processBlock(sharedAudio,sharedMidi);check(shared.queuedScene.load()==1,"Scene switched before bar");
+        for(int i=0;i<3;++i)shared.processBlock(sharedAudio,sharedMidi);check(shared.activeScene.load()==1&&shared.queuedScene.load()==-1,"Scene missed bar boundary");shared.serviceScenes();check(std::abs(shared.state.getRawParameterValue("tone")->load()-.8f)<.001f,"Scene controls did not synchronize");
+        const auto exported=File::getCurrentWorkingDirectory().getChildFile("orbit-native-preset.json");check(shared.savePreset(exported),"Shared native preset save failed");LumaOrbit bank;check(bank.loadPreset(exported)&&bank.hasScene(0)&&bank.hasScene(1),"Scene bank roundtrip failed");
+        const auto midiFile=File::getSpecialLocation(File::tempDirectory).getNonexistentChildFile("orbit-score",".mid");check(shared.exportMidi(midiFile),"MIDI export failed");FileInputStream midiStream(midiFile);MidiFile score;check(score.readFrom(midiStream)&&score.getNumTracks()==3&&score.getTimeFormat()==480,"Invalid MIDI file");for(int t=0;t<3;++t)check(score.getTrack(t)->getNumEvents()>1,"Empty MIDI track");midiFile.deleteFile();
+        const auto stemsBase=File::getSpecialLocation(File::tempDirectory).getNonexistentChildFile("orbit-stems-test",".wav");check(shared.stems.start(stemsBase,48000),"Stems start failed");for(int i=0;i<10;++i)shared.processBlock(sharedAudio,sharedMidi);shared.stems.stop();check(!shared.stems.failed.load(),"Stem recorder overflow");
+        AudioFormatManager stemFormats;stemFormats.registerBasicFormats();for(const char* name:{"synth","sub","drums"}){auto file=stemsBase.getSiblingFile(stemsBase.getFileNameWithoutExtension()+"-"+name+".wav");std::unique_ptr<AudioFormatReader> reader(stemFormats.createReaderFor(file));check(reader&&reader->lengthInSamples==2560&&reader->numChannels==2,"Stem alignment failed");reader.reset();file.deleteFile();}
         auto render=[](int block){
             LumaOrbit p;Host host;p.setPlayHead(&host);p.prepareToPlay(48000,block);set(p,"explore",.8f);
             std::vector<float> out;out.reserve(96000);MidiBuffer midi;
@@ -78,6 +105,8 @@ int main(){
         for(auto* child:editor->getChildren())if(auto* combo=dynamic_cast<ComboBox*>(child))check(combo->getSelectedId()>0&&combo->getText().isNotEmpty(),"Editor selection lost while naming notes");
         auto snapshot=editor->createComponentSnapshot(editor->getLocalBounds());
         File output=File::getCurrentWorkingDirectory().getChildFile("Luma-Orbit-preview.png");FileOutputStream stream(output);stream.setPosition(0);stream.truncate();PNGImageFormat().writeImageToStream(snapshot,stream);
+        for(auto* child:editor->getChildren())if(auto* button=dynamic_cast<TextButton*>(child))if(button->getButtonText()=="Effetti e scene"){button->setToggleState(true,dontSendNotification);button->onClick();}
+        auto performanceImage=editor->createComponentSnapshot(editor->getLocalBounds());FileOutputStream performanceStream(File::getCurrentWorkingDirectory().getChildFile("Luma-Orbit-scenes-preview.png"));performanceStream.setPosition(0);performanceStream.truncate();PNGImageFormat().writeImageToStream(performanceImage,performanceStream);
         std::cout<<"PASS: Orbit 5 sounds/3 rates, sample clock, locks, block invariance, DAW transport/seek/tempo, state, capture, stop and UI snapshot\n";
     }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}
     return 0;

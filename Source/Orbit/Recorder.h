@@ -4,11 +4,11 @@ namespace orbit {
 // Disk writes run on a background thread. The callback never waits for file I/O.
 class Recorder {
 public:
-    Recorder(){thread.startThread();}
+    Recorder()=default;
     ~Recorder(){stop();thread.stopThread(5000);}
     bool start(const juce::File& file,double rate,int channels){
         if(!std::isfinite(rate)||rate<=0||channels<1||channels>2)return false;
-        stop();juce::TemporaryFile temporary(file);
+        stop();if(!thread.isThreadRunning()&&!thread.startThread())return false;juce::TemporaryFile temporary(file);
         std::unique_ptr<juce::OutputStream> stream=temporary.getFile().createOutputStream();
         if(!stream)return false;
         juce::WavAudioFormat format;

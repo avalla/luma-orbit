@@ -7,8 +7,8 @@ class OrbitEffects {
   this.nodes=[this.delay,this.feedback,this.delayWet,this.room,this.roomWet];
   this.input.connect(this.output);this.input.connect(this.delay);this.delay.connect(this.feedback).connect(this.delay);this.delay.connect(this.delayWet).connect(this.output);this.input.connect(this.room);this.room.connect(this.roomWet).connect(this.output);this.size=-1;
  }
- update(v){
-  const t=this.context.currentTime,set=(p,x)=>p.setTargetAtTime(x,t,.03);
+ update(v,t=this.context.currentTime){
+  const set=(p,x)=>p.setTargetAtTime(x,t,.03);
   set(this.delay.delayTime,Math.min(4,60/v.bpm*[.5,.75,1][v['delay-division']]));set(this.feedback.gain,v['delay-feedback']/100);set(this.delayWet.gain,v['delay-mix']/100*.7);set(this.roomWet.gain,v['room-mix']/100*.6);
   if(this.size!==v['room-size']){
    this.size=v['room-size'];const length=Math.ceil(this.context.sampleRate*(.25+this.size/100*2.75)),buffer=this.context.createBuffer(2,length,this.context.sampleRate);
