@@ -3,6 +3,10 @@
 **[Apri Orbit](https://orbit.avalla.dev)**: synth e sequencer generativo nel browser,
 con batteria elettronica e pianificazione sul clock audio Web Audio.
 
+**Novità 0.3.0:** delay sincronizzato, riverbero, mixer synth/sub/batteria,
+preset su file e registrazione WAV fino a cinque minuti, sia sul web sia nel nativo.
+I preset web (`.json`) e nativi (`.orbit`) usano formati distinti.
+
 Il repository contiene Orbit web e tre plugin nativi macOS: Luma Orbit, Luma e Luma RMS.
 
 ## Luma Orbit nativo
@@ -35,7 +39,7 @@ non sono notarizzate da Apple. Le release restano scaricabili senza login.
 
 ## Orbit web
 
-Apri `prototypes/orbit/index.html` in un browser. Non richiede un build o dipendenze
+Apri [Orbit online](https://orbit.avalla.dev), oppure servilo su localhost per usare anche la registrazione WAV. Non richiede un build o dipendenze
 per l'esecuzione. Per funzionalità, limiti e pubblicazione Cloudflare vedi
 [la guida Orbit](prototypes/orbit/README.md).
 
@@ -44,6 +48,7 @@ Test del generatore e del clock (Node.js):
 ```sh
 node prototypes/orbit/flow.test.cjs
 node prototypes/orbit/clock.test.cjs
+node prototypes/orbit/session.test.cjs
 ```
 
 La UI e il motore web sono separati dai plugin JUCE. Le sonorità sono analoghe,

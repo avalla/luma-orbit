@@ -38,7 +38,7 @@ target_link_libraries(LumaRmsTests PRIVATE juce::juce_audio_processors)
 add_test(NAME rms_measurement COMMAND LumaRmsTests)
 
 juce_add_plugin(LumaOrbit COMPANY_NAME "Luma Audio" BUNDLE_ID "audio.luma.orbit"
-  VERSION 0.2.1
+  VERSION 0.3.0
   PLUGIN_MANUFACTURER_CODE Luma PLUGIN_CODE Orb1 FORMATS VST3 AU Standalone
   PRODUCT_NAME "Luma Orbit" IS_SYNTH TRUE NEEDS_MIDI_INPUT FALSE NEEDS_MIDI_OUTPUT FALSE
   COPY_PLUGIN_AFTER_BUILD FALSE)

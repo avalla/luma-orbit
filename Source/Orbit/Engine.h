@@ -11,6 +11,7 @@ struct Settings {
     std::array<int,8> notes=initialNotes;
     std::array<bool,8> locks{};
     double bpm=108;
+    float synthVolume=1.0f;
     float explore=.35f,tone=.62f,volume=.35f,density=.45f,depth=.65f,drumVolume=.55f,bass=.3f;
     int scale=0,sound=0,accents=5;
     bool flow=true,drums=true,kick=true,clap=true,hat=true;
@@ -105,7 +106,7 @@ public:
         // Bass ducks during the kick; fixed headroom and soft saturation bound output.
         const double duck=settings.drums&&settings.kick?1-.65*std::exp(-kickAge*20):1;
         smoothedVolume+=(settings.volume-smoothedVolume)*std::min(1.0,1/(rate*.02));
-        return float(std::tanh((melody+sub*duck+percussion)*smoothedVolume));
+        return float(std::tanh((melody*settings.synthVolume+sub*duck+percussion)*smoothedVolume));
     }
 private:
     double rate=44100,nextPulse=0,kickAge=10,clapAge=10,hatAge=10,kickPhase=0,lowNoise=0,smoothedVolume=0;

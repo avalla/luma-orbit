@@ -8,6 +8,7 @@ on:
     paths:
       - 'Source/**'
       - 'Tests/**'
+      - 'prototypes/orbit/**'
       - 'CMakeLists.txt'
       - 'scripts/package_orbit.py'
       - 'docs/Luma-Orbit.md'
@@ -40,6 +41,12 @@ jobs:
           ref: 7c9d3783b127263d72bb65fe0a7e2dc8a02a7ac2
           path: build-deps/JUCE
           persist-credentials: false
+
+      - name: Test web sequencer and files
+        run: |
+          node prototypes/orbit/flow.test.cjs
+          node prototypes/orbit/clock.test.cjs
+          node prototypes/orbit/session.test.cjs
 
       - name: Configure Intel and Apple Silicon
         run: >-

@@ -1,5 +1,7 @@
 #pragma once
 #include "Engine.h"
+#include "Effects.h"
+#include "Recorder.h"
 #include <juce_audio_utils/juce_audio_utils.h>
 
 class LumaOrbit final : public juce::AudioProcessor {
@@ -11,6 +13,9 @@ public:
     std::atomic<bool> livePlaying{false},hostAvailable{false};
     std::atomic<double> liveBpm{108};
     void capture();
+    orbit::Recorder recorder;
+    bool savePreset(const juce::File&);
+    bool loadPreset(const juce::File&);
     const juce::String getName() const override {return "Luma Orbit";}
     void prepareToPlay(double,int) override;
     void releaseResources() override;
@@ -30,11 +35,14 @@ public:
     void setStateInformation(const void*,int) override;
 private:
     orbit::Engine engine;
+    orbit::Effects effects;
+    juce::ValueTree initialState;
     double rate=44100;
+    juce::SmoothedValue<float> outputGain;
     bool wasPlaying=false,wasHost=false;
     std::atomic<bool> resetRequested{false};
     std::array<std::atomic<float>*,8> noteParams{},lockParams{};
-    enum Control {run,sync,flow,bpm,explore,tone,volume,density,depth,drumVolume,bass,scale,sound,accents,drums,kick,clap,hat,count};
+    enum Control {run,sync,flow,bpm,explore,tone,volume,density,depth,drumVolume,bass,scale,sound,accents,drums,kick,clap,hat,delayMix,delayFeedback,roomMix,roomSize,delayDivision,synthVolume,count};
     std::array<std::atomic<float>*,count> controls{};
     float value(Control c) const {return controls[size_t(c)]->load(std::memory_order_relaxed);}
 };

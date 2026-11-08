@@ -6,3 +6,5 @@
 .rhythm{border-top:1px solid var(--line);padding:24px 32px}.rhythm-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}.rhythm-heading h2{margin-top:8px}.rhythm-heading button[aria-pressed=true]{border-color:var(--lime);color:var(--lime)}.rhythm-controls{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:28px;align-items:center}.rhythm-controls .sounds{margin-top:20px}.rhythm-controls p,#drum-status{margin:12px 0;color:var(--muted)}@media(max-width:1000px){.rhythm-controls{grid-template-columns:1fr 1fr}}@media(max-width:600px){.rhythm{padding:24px}.rhythm-controls{grid-template-columns:1fr}.rhythm-heading{align-items:flex-start;flex-direction:column}}
 
 .sound .sounds{flex-wrap:wrap}.sound .sounds button{flex:1 1 28%;min-width:85px}
+
+.session-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:20px}.session-actions a{color:var(--lime);font-size:18px;padding:10px}#record[aria-pressed=true]{background:var(--peach);color:var(--bg)}
