@@ -10,7 +10,7 @@ Musicisti che vogliono comporre rapidamente con un synth e sequencer, senza una 
 
 ## Product Purpose
 
-Esplorare variazioni di una sequenza musicale, proteggere le note preferite e catturare un risultato per continuare a comporre. La prima consegna di Orbit è un prototipo UI interattivo con audio nel browser; l'integrazione JUCE è una fase successiva.
+Esplorare variazioni di una sequenza musicale, proteggere le note preferite e catturare un risultato per continuare a comporre. Orbit esiste come strumento Web Audio e come plugin nativo JUCE VST3/AU con standalone. Il codice dei motori resta separato; sub intonato, cinque timbri e batteria condividono la stessa direzione musicale.
 
 ## Brand Personality
 

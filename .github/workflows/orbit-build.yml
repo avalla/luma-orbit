@@ -1,0 +1,89 @@
+name: Build Luma Orbit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['orbit-v*']
+    paths:
+      - 'Source/**'
+      - 'Tests/**'
+      - 'CMakeLists.txt'
+      - 'scripts/package_orbit.py'
+      - 'docs/Luma-Orbit.md'
+      - 'LICENSE'
+      - '.github/workflows/orbit-build.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orbit-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  macos-universal:
+    runs-on: macos-15
+    timeout-minutes: 35
+    permissions:
+      contents: write # Required only by the tag-triggered release step.
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check out pinned JUCE 8.0.13
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: juce-framework/JUCE
+          ref: 7c9d3783b127263d72bb65fe0a7e2dc8a02a7ac2
+          path: build-deps/JUCE
+          persist-credentials: false
+
+      - name: Configure Intel and Apple Silicon
+        run: >-
+          cmake -S . -B build-universal
+          -DCMAKE_BUILD_TYPE=Release
+          -DJUCE_SOURCE_DIR="$GITHUB_WORKSPACE/build-deps/JUCE"
+          '-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64'
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+
+      - name: Build plugins, standalone and tests
+        run: >-
+          cmake --build build-universal
+          --target LumaOrbit_VST3 LumaOrbit_AU LumaOrbit_Standalone LumaOrbitTests
+          --parallel 3
+
+      - name: Test native sequencer
+        run: ctest --test-dir build-universal -R orbit_sequencer --output-on-failure
+
+      - name: Package and verify architectures and signatures
+        run: python3 scripts/package_orbit.py --build-dir build-universal --juce-dir build-deps/JUCE
+
+      - name: Upload downloadable ZIP
+        id: archive
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: build/Delivery/Luma-Orbit-macOS-Universal.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Add download to build summary
+        env:
+          ARTIFACT_URL: ${{ steps.archive.outputs.artifact-url }}
+        run: echo "[Download Luma Orbit for macOS (Intel + Apple Silicon)]($ARTIFACT_URL)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish tagged release
+        if: startsWith(github.ref, 'refs/tags/orbit-v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            build/Delivery/Luma-Orbit-macOS-Universal.zip \
+            --verify-tag \
+            --title "Luma Orbit ${RELEASE_TAG#orbit-v}" \
+            --notes-file docs/Luma-Orbit.md

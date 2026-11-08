@@ -3,7 +3,35 @@
 **[Apri Orbit](https://orbit.avalla.dev)**: synth e sequencer generativo nel browser,
 con batteria elettronica e pianificazione sul clock audio Web Audio.
 
-Il repository contiene il prototipo web Orbit e due plugin nativi macOS.
+Il repository contiene Orbit web e tre plugin nativi macOS: Luma Orbit, Luma e Luma RMS.
+
+## Luma Orbit nativo
+
+VST3, Audio Unit e standalone, con sequencer Flusso, cinque timbri (Glass, Rubber,
+Mist, Soft Keys e Bell), batteria elettronica e sub-basso intonato. Il trasporto
+può seguire BPM e posizione della DAW; controlli, note e blocchi si salvano nella
+sessione. Il motore audio C++ è indipendente dal browser.
+
+Vedi [installazione, uso e limiti](docs/Luma-Orbit.md). I target CMake sono
+`LumaOrbit_VST3`, `LumaOrbit_AU`, `LumaOrbit_Standalone` e `LumaOrbitTests`.
+Gli artefatti si trovano in `build-universal/LumaOrbit_artefacts/Release/`.
+
+```sh
+python3 scripts/package_orbit.py --build-dir build-universal --juce-dir /percorso/JUCE
+```
+
+Il pacchetto dedicato è `build/Delivery/Luma-Orbit-macOS-Universal.zip`.
+
+### Download
+
+- **[Scarica Luma Orbit per macOS, Intel + Apple Silicon](https://github.com/avalla/luma-orbit/releases/latest/download/Luma-Orbit-macOS-Universal.zip)**: ultima release con VST3, Audio Unit, app standalone, sorgenti e licenze.
+- [Tutte le release](https://github.com/avalla/luma-orbit/releases).
+- [Build di sviluppo in GitHub Actions](https://github.com/avalla/luma-orbit/actions/workflows/orbit-build.yml): apri una build riuscita e scarica lo ZIP in **Artifacts** (login GitHub richiesto, conservazione 30 giorni).
+
+La workflow **Build Luma Orbit** parte sulle modifiche native in `main`, manualmente
+con **Run workflow**, oppure sui tag `orbit-v*`. I tag pubblicano una release solo
+dopo compilazione, test e verifica del pacchetto. Le build hanno firma ad-hoc;
+non sono notarizzate da Apple. Le release restano scaricabili senza login.
 
 ## Orbit web
 
@@ -18,7 +46,8 @@ node prototypes/orbit/flow.test.cjs
 node prototypes/orbit/clock.test.cjs
 ```
 
-La UI e il motore web sono separati dai plugin JUCE descritti sotto.
+La UI e il motore web sono separati dai plugin JUCE. Le sonorità sono analoghe,
+ma non identiche: non è una conversione che incorpora Web Audio nel plugin.
 
 ## Plugin nativi
 

@@ -12,9 +12,10 @@ Apri `index.html` in Safari o Chrome e premi **Ascolta**. Non richiede installaz
 Le evoluzioni automatiche non riempiono la cronologia. Annullare Cattura ripristina la modalità precedente e la frase al momento della cattura. Nessuna persistenza su disco.
 
 Verifica del generatore: `node prototypes/orbit/flow.test.cjs` dalla radice del progetto. Il test usa casualità deterministica e verifica 200 frasi, blocchi, limiti, pause, lunghezze e variazione zero.
-- Glass, Rubber e Mist sono tre timbri dimostrativi, con luminosità e volume.
+- Cinque timbri: Glass, Rubber, Mist, Soft Keys (armoniche morbide) e Bell (sintesi FM). Luminosità e volume generale restano indipendenti.
+- Sub intonato: una sinusoide segue la nota due ottave sotto, con volume dedicato e attenuazione iniziale quando coincide con la cassa. Stop cancella anche sub e modulatore FM.
 - Batteria elettronica sintetizzata: cassa sinusoidale con discesa di frequenza, clap e hi-hat da rumore filtrato. Nessun campione esterno. Cassa, clap e hi-hat si attivano separatamente; densità controlla colpi aggiuntivi, profondità regola frequenza finale e coda della cassa. Volume ritmo regola il kit; Volume generale regola synth e batteria insieme.
-- Il ritmo usa una griglia di 16 ottavi con cassa e clap di riferimento e variazioni in Flusso. Le pause melodiche non interrompono la batteria. Cattura ferma anche l'evoluzione del pattern ritmico. Non è ancora presente una linea di sub-basso intonata né swing.
+- Il ritmo usa una griglia di 16 ottavi con cassa e clap di riferimento e variazioni in Flusso. Le pause melodiche non interrompono la batteria. Cattura ferma anche l'evoluzione del pattern ritmico. Swing non ancora presente.
 
 ## Pubblicazione
 

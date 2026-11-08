@@ -36,3 +36,16 @@ target_sources(LumaRmsTests PRIVATE Tests/Rms.cpp Source/Rms/Processor.cpp Sourc
 target_compile_definitions(LumaRmsTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 target_link_libraries(LumaRmsTests PRIVATE juce::juce_audio_processors)
 add_test(NAME rms_measurement COMMAND LumaRmsTests)
+
+juce_add_plugin(LumaOrbit COMPANY_NAME "Luma Audio" BUNDLE_ID "audio.luma.orbit"
+  PLUGIN_MANUFACTURER_CODE Luma PLUGIN_CODE Orb1 FORMATS VST3 AU Standalone
+  PRODUCT_NAME "Luma Orbit" IS_SYNTH TRUE NEEDS_MIDI_INPUT FALSE NEEDS_MIDI_OUTPUT FALSE
+  COPY_PLUGIN_AFTER_BUILD FALSE)
+target_sources(LumaOrbit PRIVATE Source/Orbit/Processor.cpp Source/Orbit/Editor.cpp)
+target_compile_definitions(LumaOrbit PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
+target_link_libraries(LumaOrbit PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+juce_add_console_app(LumaOrbitTests PRODUCT_NAME "Luma Orbit Tests")
+target_sources(LumaOrbitTests PRIVATE Tests/Orbit.cpp Source/Orbit/Processor.cpp Source/Orbit/Editor.cpp)
+target_compile_definitions(LumaOrbitTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(LumaOrbitTests PRIVATE juce::juce_audio_utils)
+add_test(NAME orbit_sequencer COMMAND LumaOrbitTests)

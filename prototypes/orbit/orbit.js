@@ -59,10 +59,24 @@ function schedulePulse(time){
  visualQueue.push({time,i,a,position:step+1,length:phrase.length,label:event.rest?'PAUSA':noteName(midi(notes[i]))});
  if(!event.rest){
  const now=time,osc=context.createOscillator(),gain=context.createGain(),filter=context.createBiquadFilter();
- const duration=sound==='mist'?.75:sound==='rubber'?.19:.35;
- osc.type=sound==='glass'?'sine':sound==='rubber'?'triangle':'sawtooth';osc.frequency.value=440*2**((midi(notes[i])-(sound==='rubber'?12:0)-69)/12);
+ const duration=sound==='mist'?.75:sound==='rubber'?.19:sound==='bell'?1.2:.5;
+ osc.type=sound==='mist'?'sawtooth':sound==='rubber'?'triangle':'sine';
+ if(sound==='keys')osc.setPeriodicWave(context.createPeriodicWave(new Float32Array([0,0,0]),new Float32Array([0,.75,.25])));osc.frequency.value=440*2**((midi(notes[i])-(sound==='rubber'?12:0)-69)/12);
  filter.type='lowpass';filter.frequency.value=300+Number($('tone').value)**2*1.3;filter.Q.value=sound==='rubber'?3:.5;
  gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(a%2===0?.23:.12,now+(sound==='mist'?.08:.006));gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+ if(sound==='bell'){
+  const mod=context.createOscillator(),depth=context.createGain();mod.frequency.value=osc.frequency.value*2;
+  depth.gain.setValueAtTime(osc.frequency.value*1.5,now);depth.gain.exponentialRampToValueAtTime(.01,now+duration);
+  mod.connect(depth).connect(osc.frequency);mod.start(now);mod.stop(now+duration+.02);voices.add(mod);
+  mod.onended=()=>{voices.delete(mod);mod.disconnect();depth.disconnect();};
+ }
+ const bassLevel=Number($('bass').value)/100;
+ if(bassLevel>0){
+  const sub=context.createOscillator(),subGain=context.createGain();sub.type='sine';sub.frequency.value=440*2**((midi(notes[i])-24-69)/12);
+  const level=.22*bassLevel,duck=drumsEnabled&&drumEnabled.kick&&hit.kick?.35:1;
+  subGain.gain.setValueAtTime(0,now);subGain.gain.linearRampToValueAtTime(level*duck,now+.008);subGain.gain.linearRampToValueAtTime(level*.7,now+.08);subGain.gain.exponentialRampToValueAtTime(.0001,now+.65);
+  sub.connect(subGain).connect(master);sub.start(now);sub.stop(now+.67);voices.add(sub);sub.onended=()=>{voices.delete(sub);sub.disconnect();subGain.disconnect();};
+ }
  osc.connect(filter).connect(gain).connect(master);osc.start(now);osc.stop(now+duration+.02);voices.add(osc);osc.onended=()=>{voices.delete(osc);osc.disconnect();filter.disconnect();gain.disconnect();};
  }
  step++;accentStep+=event.beats;remainingBeats=event.beats-1;return interval;
@@ -97,9 +111,9 @@ $('flow-mode').onclick=()=>{if(flow)return;save();flow=true;render();announce('L
 $('loop-mode').onclick=()=>{if(!flow)return;save();flow=false;render();announce('Evoluzione sospesa. La frase corrente si ripete.');};
 $('scale').onchange=()=>{save();selectedScale=$('scale').value;render();announce('Scala aggiornata. I passi seguono la nuova scala.');};
 $('accent-length').onchange=()=>{accentStep=0;render();};
-for(const id of ['amount','tone','volume'])$(id).oninput=()=>{$(`${id}-value`).textContent=`${$(id).value}%`;if(id==='volume'&&master)master.gain.setTargetAtTime(Number($(id).value)/100,context.currentTime,.02);};
+for(const id of ['amount','tone','bass','volume'])$(id).oninput=()=>{$(`${id}-value`).textContent=`${$(id).value}%`;if(id==='volume'&&master)master.gain.setTargetAtTime(Number($(id).value)/100,context.currentTime,.02);};
 $('bpm').onchange=()=>{$('bpm').value=Math.max(40,Math.min(200,Number($('bpm').value)||108));};
-document.querySelectorAll('[data-sound]').forEach(button=>button.onclick=()=>{sound=button.dataset.sound;document.querySelectorAll('[data-sound]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));$('sound-description').textContent={glass:'Attacchi nitidi, armoniche leggere.',rubber:'Bassi elastici, accenti percussivi.',mist:'Attacchi morbidi, trame sospese.'}[sound];});
+document.querySelectorAll('[data-sound]').forEach(button=>button.onclick=()=>{sound=button.dataset.sound;document.querySelectorAll('[data-sound]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));$('sound-description').textContent={glass:'Attacchi nitidi, armoniche leggere.',rubber:'Bassi elastici, accenti percussivi.',mist:'Attacchi morbidi, trame sospese.',keys:'Tasti morbidi, armoniche rotonde.',bell:'Campane FM, code luminose.'}[sound];});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&running)stop();});
 window.addEventListener('pagehide',stop);
 $('drums-toggle').onclick=()=>{drumsEnabled=!drumsEnabled;if(!drumsEnabled)kit?.stop();$('drums-toggle').setAttribute('aria-pressed',String(drumsEnabled));$('drums-toggle').textContent=drumsEnabled?'Ritmo attivo':'Ritmo spento';$('drum-status').textContent=drumsEnabled?'Il ritmo accompagna il synth.':'Solo synth. Riattiva il ritmo quando vuoi.';};
