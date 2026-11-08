@@ -17,6 +17,16 @@ Verifica del generatore: `node prototypes/orbit/flow.test.cjs` dalla radice del 
 - Batteria elettronica sintetizzata: cassa sinusoidale con discesa di frequenza, clap e hi-hat da rumore filtrato. Nessun campione esterno. Cassa, clap e hi-hat si attivano separatamente; densità controlla colpi aggiuntivi, profondità regola frequenza finale e coda della cassa. Volume ritmo regola il kit; Volume generale regola synth e batteria insieme.
 - Il ritmo usa una griglia di 16 ottavi con cassa e clap di riferimento e variazioni in Flusso. Le pause melodiche non interrompono la batteria. Cattura ferma anche l'evoluzione del pattern ritmico. Swing non ancora presente.
 
+## Audio su iPhone
+
+Al tocco di Ascolta Orbit richiede `navigator.audioSession.type = "playback"`,
+se disponibile, prima di creare o riprendere il contesto audio. Questo evita
+che Safari tratti la musica come audio ambientale soggetto al silenzioso.
+Nei browser senza Audio Session API può essere necessario disattivare la modalità
+silenziosa; controlla anche il volume multimediale e l'uscita Bluetooth/AirPlay.
+La pagina segnala un contesto che non riesce ad avviarsi. La verifica dell'audio
+sull'altoparlante di un iPhone fisico resta distinta dai test browser desktop.
+
 ## Effetti, mixer e file
 
 - Delay a tempo: 1/8, 1/8 puntato, 1/4; quantità e feedback (massimo 75%).

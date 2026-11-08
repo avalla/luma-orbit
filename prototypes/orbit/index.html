@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="orbit.css">
 <main>
   <header><div class="brand">luma <span>/ orbit</span></div><span class="prototype">ORBIT 0.3</span><div class="transport"><button id="play" class="primary">▶ Ascolta</button><label class="tempo"><input id="bpm" type="number" min="40" max="200" value="108" aria-label="Tempo in BPM"> BPM</label></div></header>
+  <p id="audio-status" class="audio-status" role="status" hidden></p>
   <section class="flow-toolbar" aria-label="Evoluzione musicale"><div class="sounds" role="group" aria-label="Modalità sequencer"><button id="flow-mode" aria-pressed="true">↗ Flusso</button><button id="loop-mode" aria-pressed="false">↻ Ripeti</button></div><p id="flow-description">La frase evolve da sola. Cattura la rende ripetibile.</p><span id="phrase-count">Frase 1</span></section>
   <section class="workspace">
     <div class="sequence">

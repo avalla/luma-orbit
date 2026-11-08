@@ -8,3 +8,5 @@
 .sound .sounds{flex-wrap:wrap}.sound .sounds button{flex:1 1 28%;min-width:85px}
 
 .session-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:20px}.session-actions a{color:var(--lime);font-size:18px;padding:10px}#record[aria-pressed=true]{background:var(--peach);color:var(--bg)}
+
+.audio-status{max-width:none;margin:0;padding:12px 32px;border-bottom:1px solid var(--line);font-size:16px}

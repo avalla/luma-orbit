@@ -99,10 +99,18 @@ function drawPlayhead(){
  }
  animationFrame=requestAnimationFrame(drawPlayhead);
 }
+function requestMusicPlayback(){
+ // Safari otherwise treats Web Audio as ambient audio, muted by the iPhone silent switch.
+ try{if(navigator.audioSession){navigator.audioSession.type='playback';return navigator.audioSession.type==='playback';}}catch{}
+ return false;
+}
 async function play(){
  if(running){stop();return;}const token=++generation;
- try{context??=new (window.AudioContext||window.webkitAudioContext)();if(!master){master=context.createGain();master.connect(context.destination);effects=new OrbitEffects(context,master);synthBus=context.createGain();synthBus.connect(effects.input);}effects.update(controlValues());synthBus.gain.value=Number($('synth-volume').value)/100;kit??=new OrbitDrums.Kit(context,effects.input);kit.bus.gain.value=Number($('drum-volume').value)/100;master.gain.value=Number($('volume').value)/100;await context.resume();if(token!==generation)return;running=true;step=accentStep=drumBeat=0;remainingBeats=0;visualQueue.length=0;$('play').textContent='■ Ferma';audioClock=new OrbitAudioClock(context,schedulePulse);audioClock.start();timer=setInterval(()=>{if(context.state!=='running'){stop();return;}audioClock.pump();},25);drawPlayhead();}
- catch{stop();announce('Audio non disponibile. Apri il prototipo in Safari o Chrome e riprova.');}
+ const musicPlayback=requestMusicPlayback();
+ $('audio-status').hidden=false;
+ $('audio-status').textContent=musicPlayback?'Avvio audio…':'Su iPhone, se non senti audio, disattiva la modalità silenziosa e alza il volume multimediale.';
+ try{context??=new (window.AudioContext||window.webkitAudioContext)();if(!master){master=context.createGain();master.connect(context.destination);effects=new OrbitEffects(context,master);synthBus=context.createGain();synthBus.connect(effects.input);}effects.update(controlValues());synthBus.gain.value=Number($('synth-volume').value)/100;kit??=new OrbitDrums.Kit(context,effects.input);kit.bus.gain.value=Number($('drum-volume').value)/100;master.gain.value=Number($('volume').value)/100;await context.resume();if(token!==generation)return;if(context.state!=='running')throw new Error('Audio suspended');if(musicPlayback)$('audio-status').textContent='Riproduzione musicale attiva.';running=true;step=accentStep=drumBeat=0;remainingBeats=0;visualQueue.length=0;$('play').textContent='■ Ferma';audioClock=new OrbitAudioClock(context,schedulePulse);audioClock.start();timer=setInterval(()=>{if(context.state!=='running'){stop();return;}audioClock.pump();},25);drawPlayhead();}
+ catch{stop();$('audio-status').textContent='Audio non avviato. Tocca di nuovo Ascolta; se necessario, apri questa pagina direttamente in Safari.';announce('Audio non disponibile. Riprova con Ascolta.');}
 }
 $('play').onclick=play;
 $('explore').onclick=()=>{const amount=Number($('amount').value)/100;if(!amount){announce('Esplora è a zero: la tua idea resta invariata.');return;}if(locks.every(Boolean)){announce('Tutti i passi sono fissi. Sblocca una nota per esplorare.');return;}save();notes=base.map((n,i)=>locks[i]?notes[i]:Math.random()<amount?Math.max(0,Math.min(7,n+(Math.random()<.5?-1:1)*Math.ceil(amount*4))):n);render();announce(notes.every((n,i)=>n===base[i])?'Questa variazione conserva l’idea. Puoi esplorare ancora.':'Nuova variazione pronta. Ascoltala, poi catturala.');};
