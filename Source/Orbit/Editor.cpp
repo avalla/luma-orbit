@@ -77,7 +77,7 @@ private:
     void timerCallback()override{
         const bool host=owner.hostAvailable.load();buttons[0].setEnabled(!host);sliders[0].setEnabled(!host);
         const int selected=int(owner.state.getRawParameterValue("scale")->load());
-        if(selected!=previousScale){previousScale=selected;for(auto& combo:notes){for(int n=0;n<8;++n)combo.changeItemText(n+1,noteName(orbit::midi(n,selected)));combo.setText(combo.getItemText(combo.getSelectedItemIndex()),dontSendNotification);}}
+        if(selected!=previousScale){previousScale=selected;for(auto& combo:notes){const int selectedId=combo.getSelectedId();for(int n=0;n<8;++n)combo.changeItemText(n+1,noteName(orbit::midi(n,selected)));combo.setSelectedId(selectedId,dontSendNotification);}}
         repaint();
     }
 };

@@ -41,6 +41,7 @@ int main(){
         p.setPlayHead(nullptr);set(p,"sync",0);set(p,"run",1);p.processBlock(audio,midi);check(p.livePlaying.load(),"Internal clock failed");
         set(p,"run",0);p.processBlock(audio,midi);check(audio.getMagnitude(0,512)==0,"Internal stop failed");
         std::unique_ptr<AudioProcessorEditor> editor(p.createEditor());
+        for(auto* child:editor->getChildren())if(auto* combo=dynamic_cast<ComboBox*>(child))check(combo->getSelectedId()>0&&combo->getText().isNotEmpty(),"Editor selection lost while naming notes");
         auto snapshot=editor->createComponentSnapshot(editor->getLocalBounds());
         File output=File::getCurrentWorkingDirectory().getChildFile("Luma-Orbit-preview.png");FileOutputStream stream(output);stream.setPosition(0);stream.truncate();PNGImageFormat().writeImageToStream(snapshot,stream);
         std::cout<<"PASS: Orbit 5 sounds/3 rates, sample clock, locks, block invariance, DAW transport/seek/tempo, state, capture, stop and UI snapshot\n";
