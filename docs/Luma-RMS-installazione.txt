@@ -1,0 +1,33 @@
+LUMA RMS 0.2.0 / macOS Apple Silicon (arm64)
+
+Plugin di analisi RMS in tempo reale. Due formati dello stesso effetto:
+- Luma RMS.vst3
+- Luma RMS.component (Audio Unit)
+
+INSTALLAZIONE LOCALE
+1. Copia Luma RMS.vst3 in ~/Library/Audio/Plug-Ins/VST3/
+   oppure Luma RMS.component in ~/Library/Audio/Plug-Ins/Components/
+   Crea la cartella se non esiste. In Finder puoi usare Vai > Vai alla cartella.
+2. Riavvia la DAW o esegui una nuova scansione dei plugin.
+3. Cerca "Luma RMS" fra gli effetti di analisi, produttore "Luma Audio".
+4. Inseriscilo sulla traccia o sul master e avvia la riproduzione.
+
+LETTURE
+- RMS in dBFS, finestra mobile 100 / 400 / 1000 ms.
+- Valore principale: media energetica dei canali L/R, oppure canale mono.
+- Barre indipendenti per canale e picco campione mantenuto fino al reset.
+- Il reset del picco avviene al successivo blocco audio.
+- Audio identico in ingresso/uscita, zero latenza.
+- Finestra iniziale calcolata sui campioni gia ricevuti.
+- Se la DAW sospende il plugin restano visibili gli ultimi valori.
+- Dopo Stop resta l'ultima misura; la riproduzione successiva riparte da zero.
+- La riga di stato indica se arriva audio o se vedi l'ultima lettura.
+
+CONVENZIONE
+RMS matematico, non ponderato: sinusoide con picco a 0 dBFS = -3.0103 dBFS RMS.
+Non misura LUFS o true peak. Il valore numerico puo superare 0 dBFS se la DAW
+invia campioni oltre il fondo scala. Le barre coprono da -60 a 0 dBFS.
+
+Build locale di sviluppo con firma ad-hoc, non notarizzata.
+Test automatici superati; la compatibilita con la tua DAW va verificata.
+Dipendenza JUCE 8.0.13: consultare la relativa licenza prima della distribuzione.

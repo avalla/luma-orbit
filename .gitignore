@@ -1,0 +1,15 @@
+build/
+build-*/
+.DS_Store
+.wrangler/
+.playwright-mcp/
+node_modules/
+__pycache__/
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+*.aup4
+*.aup4-shm
+*.aup4-wal

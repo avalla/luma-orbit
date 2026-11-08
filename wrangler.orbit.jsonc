@@ -1,0 +1,11 @@
+{
+  "name": "luma-orbit",
+  "account_id": "4fc4de87eb1fd6e1ddd7bb5076ce97c0",
+  "compatibility_date": "2026-11-08",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": { "directory": "./build/orbit-web" },
+  "routes": [
+    { "pattern": "orbit.avalla.dev", "custom_domain": true }
+  ]
+}
