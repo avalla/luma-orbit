@@ -14,6 +14,13 @@ Salva il preset per conservare anche i quattro slot.
 
 Il repository contiene Orbit web e tre plugin nativi macOS: Luma Orbit, Luma e Luma RMS.
 
+## Documentazione
+
+- [Guida rapida](docs/Orbit-quickstart.md): BPM, cattura, scene, preset ed esportazioni.
+- [Changelog](CHANGELOG.md): novità, correzioni e compatibilità per versione.
+- [Guida nativa](docs/Luma-Orbit.md): installazione, Sync DAW e registrazione.
+- [Guida web](prototypes/orbit/README.md): uso nel browser, iPhone e sviluppo locale.
+
 ## Luma Orbit nativo
 
 VST3, Audio Unit e standalone, con sequencer Flusso, cinque timbri (Glass, Rubber,
@@ -44,17 +51,29 @@ non sono notarizzate da Apple. Le release restano scaricabili senza login.
 
 ## Orbit web
 
-Apri [Orbit online](https://orbit.avalla.dev), oppure servilo su localhost per usare anche la registrazione WAV. Non richiede un build o dipendenze
+Apri [Orbit online](https://orbit.avalla.dev), oppure servilo su localhost per usare anche la registrazione WAV. Non richiede una compilazione o dipendenze
 per l'esecuzione. Per funzionalità, limiti e pubblicazione Cloudflare vedi
 [la guida Orbit](prototypes/orbit/README.md).
 
-Test del generatore e del clock (Node.js):
+Test web di generatore, clock, preset, MIDI e registrazione (Node.js):
 
 ```sh
 node prototypes/orbit/flow.test.cjs
 node prototypes/orbit/clock.test.cjs
 node prototypes/orbit/session.test.cjs
 ```
+
+Il test di compatibilità richiede prima l'esecuzione del test nativo, che genera
+`build-universal/orbit-native-preset.json`:
+
+```sh
+cmake --build build-universal --target LumaOrbitTests -j 8
+ctest --test-dir build-universal -R orbit_sequencer --output-on-failure
+node prototypes/orbit/interchange.test.cjs build-universal/orbit-native-preset.json
+```
+
+Usa questi comandi dopo aver configurato `build-universal` come descritto in
+[Compilazione](#compilazione). GitHub Actions esegue lo stesso controllo dopo i test nativi.
 
 La UI e il motore web sono separati dai plugin JUCE. Le sonorità sono analoghe,
 ma non identiche: non è una conversione che incorpora Web Audio nel plugin.

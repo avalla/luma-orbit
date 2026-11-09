@@ -4,6 +4,8 @@ Synth e sequencer generativo con batteria elettronica, sub intonato e cinque tim
 Glass, Rubber, Mist, Soft Keys e Bell. Il motore C++ genera l'audio direttamente
 nel callback della DAW; non incorpora browser, JavaScript o servizi remoti.
 
+[Guida rapida](Orbit-quickstart.md) · [Changelog](../CHANGELOG.md) · [Guida web](../prototypes/orbit/README.md)
+
 ## Installazione macOS
 
 - Copia `VST3/Luma Orbit.vst3` in `~/Library/Audio/Plug-Ins/VST3/`.
@@ -21,11 +23,12 @@ sono stati verificati. Firma ad-hoc, senza Developer ID o notarizzazione.
 è attivo un trasporto host, Ascolta e Tempo interno sono disabilitati. Disattiva
 Sync DAW per usare il trasporto interno. L'app standalone usa il trasporto interno.
 Le note vengono attivate sul campione della griglia degli ottavi; cambi di posizione
-o loop della DAW ripartono con una nuova frase deterministica. Non riceve MIDI esterno
-ma esporta la frase corrente come file MIDI.
+o loop della DAW riavviano la sequenza; una frase catturata conserva pause e durate.
+Non riceve MIDI esterno ma esporta la frase corrente come file MIDI.
 
 **Flusso** sviluppa frasi da 8, 12 o 16 eventi. Esplora controlla variazione melodica,
-pause e durate. Con Energia neutra ed Esplora a zero, o con tutte le note bloccate, non introduce nuove variazioni.
+pause e durate. Con Energia neutra ed Esplora a zero, o con tutte le note bloccate,
+non modifica i gradi melodici durante l’evoluzione.
 Gli accenti hanno un ciclo indipendente di 5, 7 o 8 passi. I controlli sono automatizzabili.
 
 **Cattura la frase** conserva gli otto gradi, la sequenza completa di eventi,
@@ -44,7 +47,7 @@ cambio avviene alla prossima battuta di quattro quarti. Con Sync DAW il tempo re
 quello dell'host. Il cambio riguarda suono, frase, batteria, mixer ed effetti.
 Salva il preset o la sessione DAW per conservare tutti gli slot.
 
-- **Swing**: 0–0.60, ritarda gli ottavi dispari mantenendo la lunghezza della battuta.
+- **Swing**: 0–0.60, ritarda il secondo ottavo di ogni coppia mantenendo la lunghezza della battuta.
 - **Probabilità colpi**: 0–1, probabilità di suonare ciascun evento melodico e colpo
   di batteria. Le note bloccate suonano sempre, salvo le pause già nella frase.
 - **Energia**: 0.50 è neutra; modula luminosità, esplorazione e densità senza modificare
@@ -59,9 +62,10 @@ uscita mono o stereo (gli effetti aprono il campo stereo), zero latenza dichiara
 ## Effetti
 
 Il pulsante **Effetti e scene** apre i controlli di delay e riverbero; **Torna al suono**
-ripristina i controlli del synth. Le quantità partono da zero, anche caricando una
-sessione di una versione precedente. Tutti i parametri degli effetti si salvano
-nella sessione e sono automatizzabili.
+ripristina i controlli del synth. Le quantità partono da zero nello strumento appena
+inizializzato e nelle sessioni anteriori alla loro introduzione in 0.3. Le sessioni
+0.3 conservano gli effetti salvati. Tutti i parametri degli effetti si salvano nella
+sessione e sono automatizzabili.
 
 - **Quantita delay** aggiunge echi sincronizzati al tempo interno o della DAW.
   Scegli 1/8, 1/8 puntato o 1/4 dal menu. Il tempo massimo del delay è 4 secondi;
@@ -111,7 +115,11 @@ WAV incompleto. Non registra il microfono e non include altri strumenti della DA
 cmake -S . -B build-universal -DCMAKE_BUILD_TYPE=Release \
   '-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64' -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
 cmake --build build-universal --target LumaOrbit_VST3 LumaOrbit_AU LumaOrbit_Standalone LumaOrbitTests -j 8
-ctest --test-dir build-universal --output-on-failure
+ctest --test-dir build-universal -R orbit_sequencer --output-on-failure
+node prototypes/orbit/flow.test.cjs
+node prototypes/orbit/clock.test.cjs
+node prototypes/orbit/session.test.cjs
+node prototypes/orbit/interchange.test.cjs build-universal/orbit-native-preset.json
 ```
 
 Aggiungi `-DJUCE_SOURCE_DIR=/percorso/JUCE` se disponi di JUCE 8.0.13 locale.
@@ -119,3 +127,10 @@ I test verificano cinque timbri a tre sample rate, clock, blocchi di dimensioni 
 blocchi delle note, trasporto host simulato, stato, preset condivisi, cattura dopo riavvio, scene a battuta, swing, probabilità,
 MIDI leggibile, mixer, WAV allineati e silenzio dopo Stop. La validazione
 in DAW reali resta necessaria. Il codice originale è MIT; JUCE mantiene la propria licenza.
+
+Il test `orbit_sequencer` scrive il JSON usato dal test di scambio e le anteprime
+`Luma-Orbit-preview.png` e `Luma-Orbit-scenes-preview.png` nella directory di build.
+La pipeline della [release 0.4.0](https://github.com/avalla/luma-orbit/actions/runs/42527775440)
+ha completato build universale, test, scambio preset e verifica del pacchetto.
+Le verifiche locali includono anche gli altri due plugin e l'esecuzione Orbit x86_64
+tramite Rosetta; non equivalgono a una prova su un Mac Intel fisico o su tutte le DAW.

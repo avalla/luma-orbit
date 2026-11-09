@@ -1,11 +1,13 @@
-# Luma Orbit 0.4 · web
+# Luma Orbit 0.4.0 · web
+
+[Guida rapida](../../docs/Orbit-quickstart.md) · [Changelog](../../CHANGELOG.md) · [Guida nativa](../../docs/Luma-Orbit.md)
 
 Apri https://orbit.avalla.dev e premi **Ascolta**. Per sviluppo locale usa `python3 -m http.server 8765 --directory prototypes/orbit` dalla radice e apri http://localhost:8765. La registrazione AudioWorklet richiede HTTPS o localhost. Nessuna dipendenza frontend o accesso al microfono.
 
 - Otto note modificabili nella scala scelta; ogni passo può essere bloccato.
 - Accenti su un ciclo indipendente di 5, 7 o 8 passi.
 - Flusso, attivo inizialmente, evolve automaticamente alla fine di ogni frase: 8, 12 o 16 eventi, note gradualmente diverse, pause e durate di uno o due ottavi. I primi otto eventi attraversano tutti i passi; le code più lunghe riprendono liberamente il materiale. Gli accenti continuano sul loro ciclo indipendente.
-- Esplora controlla ampiezza delle variazioni e probabilità di pause e durate lunghe. Con Energia neutra ed Esplora a zero (o con tutti i passi bloccati), dalla frase successiva non vengono introdotte variazioni. La prima frase presenta l'idea originale. Nuova variazione resta disponibile per una modifica manuale.
+- Esplora controlla ampiezza delle variazioni e probabilità di pause e durate lunghe. Con Energia neutra ed Esplora a zero (o con tutti i passi bloccati), dalla frase successiva non vengono modificati i gradi melodici. La prima frase presenta l'idea originale. Nuova variazione resta disponibile per una modifica manuale.
 - Cattura conserva la frase corrente, incluse pause e durate, e passa a Ripeti. Flusso riattiva l'evoluzione. Non garantisce musica che non si ripeta mai: sviluppa il materiale di otto note in frasi variabili.
 - Annulla ripristina modifiche di note, blocchi, scala e catture, fino a 32 operazioni.
 
@@ -15,7 +17,7 @@ Verifica del generatore: `node prototypes/orbit/flow.test.cjs` dalla radice del 
 - Cinque timbri: Glass, Rubber, Mist, Soft Keys (armoniche morbide) e Bell (sintesi FM). Luminosità e volume generale restano indipendenti.
 - Sub intonato: una sinusoide segue la nota due ottave sotto, con volume dedicato e attenuazione iniziale quando coincide con la cassa. Stop cancella anche sub e modulatore FM.
 - Batteria elettronica sintetizzata: cassa sinusoidale con discesa di frequenza, clap e hi-hat da rumore filtrato. Nessun campione esterno. Cassa, clap e hi-hat si attivano separatamente; densità controlla colpi aggiuntivi, profondità regola frequenza finale e coda della cassa. Volume ritmo regola il kit; Volume generale regola synth e batteria insieme.
-- Il ritmo usa una griglia di 16 ottavi con cassa e clap di riferimento e variazioni in Flusso. Le pause melodiche non interrompono la batteria. Cattura ferma anche l'evoluzione del pattern ritmico. Swing fino al 60% ritarda gli ottavi dispari senza allungare la battuta.
+- Il ritmo usa una griglia di 16 ottavi con cassa e clap di riferimento e variazioni in Flusso. Le pause melodiche non interrompono la batteria. Cattura ferma anche l'evoluzione del pattern ritmico. Swing fino al 60% ritarda il secondo ottavo di ogni coppia senza allungare la battuta.
 
 ## Scene, Energia e arrangiamento
 
@@ -43,7 +45,7 @@ casuale futura. La cronologia Annulla e la posizione di riproduzione non si tras
 ## Audio su iPhone
 
 Al tocco di Ascolta Orbit richiede `navigator.audioSession.type = "playback"`,
-se disponibile, prima di creare o riprendere il contesto audio. Questo evita
+se disponibile, prima di creare o riprendere il contesto audio. La richiesta mira a evitare
 che Safari tratti la musica come audio ambientale soggetto al silenzioso.
 Nei browser senza Audio Session API può essere necessario disattivare la modalità
 silenziosa; controlla anche il volume multimediale e l'uscita Bluetooth/AirPlay.
@@ -58,7 +60,26 @@ sull'altoparlante di un iPhone fisico resta distinta dai test browser desktop.
 - **Salva preset / Apri preset**: file JSON versionato con note, blocchi, frase (pause e durate incluse), pattern batteria e controlli. Il caricamento valida il file e lascia il trasporto fermo. Non salva il punto di riproduzione né il futuro del generatore casuale. Il formato condiviso `luma-orbit`, versione 2, si apre anche nel plugin. I vecchi JSON web vengono migrati; i vecchi `.orbit` binari si aprono nel plugin, da cui si possono risalvare come JSON.
 - **Registra WAV**: avvia l'ascolto se necessario e cattura il mix stereo finale, PCM 16 bit alla frequenza del browser. **Termina registrazione** o **Ferma** prepara il link **Scarica WAV**. Limite cinque minuti; scarica il file prima di chiudere la pagina. Nessun caricamento su server. Cambiare scheda ferma ascolto e registrazione.
 
-Test aggiuntivi: `node prototypes/orbit/session.test.cjs` (preset, WAV, stereo, clipping, limite e stop).
+## Verifiche
+
+Dalla radice del repository:
+
+```sh
+node prototypes/orbit/flow.test.cjs
+node prototypes/orbit/clock.test.cjs
+node prototypes/orbit/session.test.cjs
+```
+
+I test coprono generazione, clock, migrazione dei preset, scene, swing, Energia,
+MIDI, PCM stereo, tracce allineate, clipping, limite di registrazione e Stop.
+Dopo aver compilato ed eseguito `LumaOrbitTests`, controlla anche lo scambio con il nativo:
+
+```sh
+node prototypes/orbit/interchange.test.cjs build-universal/orbit-native-preset.json
+```
+
+Il file in ingresso è generato dal test nativo, non dal server web.
+Le istruzioni per produrlo sono nella [guida nativa](../../docs/Luma-Orbit.md#compilazione-e-verifiche).
 
 ## Pubblicazione
 
@@ -68,6 +89,7 @@ La configurazione è `../../wrangler.orbit.jsonc`. Dalla radice:
 ```sh
 node prototypes/orbit/flow.test.cjs
 node prototypes/orbit/clock.test.cjs
+node prototypes/orbit/session.test.cjs
 python3 scripts/prepare_orbit_web.py
 npx wrangler@4.158.0 deploy --config wrangler.orbit.jsonc
 ```

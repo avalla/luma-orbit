@@ -12,6 +12,18 @@ Musicisti che vogliono comporre rapidamente con un synth e sequencer, senza una 
 
 Esplorare variazioni di una sequenza musicale, proteggere le note preferite e catturare un risultato per continuare a comporre. Orbit esiste come strumento Web Audio e come plugin nativo JUCE VST3/AU con standalone. Il codice dei motori resta separato; sub intonato, cinque timbri e batteria condividono la stessa direzione musicale.
 
+## Funzioni disponibili in Orbit 0.4
+
+- Composizione con otto gradi melodici, blocchi, Flusso e cattura della frase completa.
+- Cinque timbri, sub intonato, batteria, mixer, delay e riverbero.
+- Quattro scene richiamabili a tempo, swing, probabilità, Energia e Fill.
+- Preset JSON condivisi, export MIDI della frase, WAV del mix e tre WAV separati.
+
+La versione nativa segue il trasporto della DAW; quella web usa il clock audio del
+browser e offre Annulla. I motori condividono lo stato musicale, non waveform identiche.
+Le scene vanno salvate esplicitamente e il preset conserva tutti gli slot. Non sono
+presenti ingresso MIDI esterno o Annulla nativo. Dettagli nella [guida rapida](docs/Orbit-quickstart.md).
+
 ## Brand Personality
 
 Essenziale, preciso, sperimentale e giocoso. Preferenze confermate dall'utente.
@@ -23,7 +35,7 @@ Evitare pannelli affollati e scritte troppo piccole. La sperimentazione deve res
 ## Design Principles
 
 - Rendere visibile la relazione fra note, ritmo e suono.
-- Esplorare senza perdere l'idea iniziale: blocchi e annullamento.
+- Esplorare senza perdere l'idea iniziale: blocchi, cattura e, sul web, annullamento.
 - Preferire un flusso musicale in evoluzione al loop fisso; mantenere la possibilità di catturare e ripetere una frase.
 - Distinguere nettamente i controlli disponibili dalle funzioni future.
 - Pochi controlli immediati, con valori espliciti.

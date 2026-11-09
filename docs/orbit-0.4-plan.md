@@ -1,5 +1,8 @@
 # Orbit 0.4 implementation
 
+Status: completed and released on 2026-11-08. This document records the implementation;
+current user instructions live in the [quickstart](Orbit-quickstart.md) and changes in the [changelog](../CHANGELOG.md).
+
 ## Product contract
 
 - Four named scene slots save the complete musical idea; recall at the next 4/4 bar while playing, immediately while stopped. Saving a slot is explicit.
@@ -32,3 +35,10 @@ Physical iPhone output and third-party DAW compatibility still require hardware/
 ## Boundaries
 
 Audio callbacks copy only fixed-size snapshots and use nonblocking lock attempts; JSON, file dialogs and parameter notifications remain outside the callback. Scene audio changes happen on the sample clock; the message-thread timer mirrors controls into host parameters. WAV disk writes use background queues, with explicit overflow reporting. Empty scene slots are intentional; the user saves an idea before recalling it.
+
+## Delivery
+
+- Source: commit `6b73b383d79d7eca71c40f824a4b8f52d3d5a767`, tag `orbit-v0.4.0`.
+- [Release pipeline](https://github.com/avalla/luma-orbit/actions/runs/42527775440): successful, including native/web interchange and packaging.
+- [Public release](https://github.com/avalla/luma-orbit/releases/tag/orbit-v0.4.0): downloaded ZIP verified for integrity, version 0.4.0 and universal binaries in all three formats.
+- [Web deployment](https://orbit.avalla.dev): Cloudflare version `2089b6aa-2993-4275-b02f-403f644a474a`; production playback and three non-silent, equal-length WAV stems verified.
