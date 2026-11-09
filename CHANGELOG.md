@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+
+- Interfaccia Orbit web e nativa in italiano, inglese, francese, tedesco e spagnolo; scelta persistente senza interrompere audio o modificare i preset.
+- Corpo: due voci sinusoidali a ±7 cent e una componente all’ottava inferiore, con guadagno normalizzato. Default 35%; migrazione dei vecchi preset a zero.
+- Catalogo condiviso, generazione delle traduzioni e controlli di copertura/placeholder in CI.
+- Guide utente nelle cinque lingue e verifiche di compatibilità dello stato.
+
+
 Cronologia di Luma Orbit, versione web e plugin nativo. Le date seguono i tag
 del repository; gli aggiornamenti web tra due tag sono riportati nella release successiva.
 Luma Synth e Luma RMS mantengono versioni proprie.

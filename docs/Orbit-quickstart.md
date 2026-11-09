@@ -1,8 +1,28 @@
-# Orbit 0.4 · guida rapida
+# Orbit 0.5 · guida rapida
+
+## Lingua e suono pieno · 0.5
+
+Il selettore Lingua offre italiano, inglese, francese, tedesco e spagnolo. La scelta
+si conserva sul dispositivo e può cambiare durante l'ascolto. È una preferenza
+dell'interfaccia, esclusa dai preset; nomi tecnici dei parametri host e finestre
+di sistema seguono le rispettive convenzioni.
+
+**Corpo** aggiunge al synth due sinusoidi scordate di ±7 cent e una componente
+un'ottava sotto, con guadagno normalizzato. Parti dal 35% e prova 35–60% per dare
+più consistenza alle note. Sub e batteria conservano i propri volumi indipendenti.
+Le nuove sessioni partono dal 35%; i vecchi preset vengono caricati con Corpo a
+zero per conservarne il suono: alza il controllo per usare la nuova sonorità.
+
+Guide: [Italiano](https://github.com/avalla/luma-orbit/blob/main/docs/Orbit-quickstart.md) ·
+[English](https://github.com/avalla/luma-orbit/blob/main/docs/en/README.md) ·
+[Français](https://github.com/avalla/luma-orbit/blob/main/docs/fr/README.md) ·
+[Deutsch](https://github.com/avalla/luma-orbit/blob/main/docs/de/README.md) ·
+[Español](https://github.com/avalla/luma-orbit/blob/main/docs/es/README.md).
+
 
 [Apri la versione web](https://orbit.avalla.dev) oppure
 [scarica VST3, Audio Unit e standalone per macOS](https://github.com/avalla/luma-orbit/releases/latest/download/Luma-Orbit-macOS-Universal.zip).
-Sul web ricarica la pagina se non compare **ORBIT 0.4**. Per installare il plugin
+Sul web ricarica la pagina se non compare **ORBIT 0.5**. Per installare il plugin
 segui la [guida nativa](Luma-Orbit.md#installazione-macos).
 
 ## Dalla prima frase alle scene
@@ -53,7 +73,7 @@ nome base nuovo; i file già esistenti non vengono sovrascritti.
 
 ## Riprendere un progetto precedente
 
-- Apri direttamente i vecchi JSON web in Orbit 0.4.
+- Apri direttamente i vecchi JSON web in Orbit 0.5.
 - Per convertire un vecchio `.orbit` binario, aprilo nel plugin e risalvalo come JSON;
   poi apri quel JSON sul web.
 - Swing parte da zero, Probabilità dal massimo ed Energia dal punto neutro.

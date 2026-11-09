@@ -1,13 +1,14 @@
 /* Versioned web presets and PCM WAV encoding, shared with Node tests. */
 (function(root){
 'use strict';
-const ranges={bpm:[40,200],amount:[0,100],tone:[0,100],bass:[0,100],volume:[0,100],density:[0,100],depth:[0,100],'drum-volume':[0,100],'synth-volume':[0,100],'delay-mix':[0,100],'delay-feedback':[0,75],'room-mix':[0,100],'room-size':[0,100],'delay-division':[0,2],'accent-length':[5,8],swing:[0,60],probability:[0,100],energy:[0,100]};
+const ranges={bpm:[40,200],amount:[0,100],tone:[0,100],bass:[0,100],volume:[0,100],density:[0,100],depth:[0,100],'drum-volume':[0,100],'synth-volume':[0,100],'delay-mix':[0,100],'delay-feedback':[0,75],'room-mix':[0,100],'room-size':[0,100],'delay-division':[0,2],'accent-length':[5,8],swing:[0,60],probability:[0,100],energy:[0,100],body:[0,100]};
 function validate(input,nested=false){
  const p=JSON.parse(JSON.stringify(input));
  const fail=()=>{throw new Error('Preset Orbit web non valido');};
  if(!p)fail();
  if(p.format==='luma-orbit-web'&&p.version===1){p.format='luma-orbit';p.version=2;p.controls={...p.controls,swing:0,probability:100,energy:50};}
  if(p.format!=='luma-orbit'||p.version!==2)fail();
+ if(p.controls&&p.controls.body===undefined)p.controls.body=0;
  for(const key of ['base','notes'])if(!Array.isArray(p[key])||p[key].length!==8||p[key].some(n=>!Number.isInteger(n)||n<0||n>7))fail();
  if(!Array.isArray(p.locks)||p.locks.length!==8||p.locks.some(n=>typeof n!=='boolean'))fail();
  if(!['glass','rubber','mist','keys','bell'].includes(p.sound)||!['minor','major','pentatonic'].includes(p.scale)||typeof p.flow!=='boolean'||typeof p.drumsEnabled!=='boolean')fail();

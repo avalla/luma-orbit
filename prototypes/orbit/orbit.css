@@ -12,3 +12,5 @@
 .audio-status{max-width:none;margin:0;padding:12px 32px;border-bottom:1px solid var(--line);font-size:16px}
 
 .scene-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:24px}.scene-grid>div{display:flex;flex-direction:column;gap:8px}.scene-grid button{min-height:44px}#stem-downloads{display:flex;flex-wrap:wrap;gap:20px}#stem-downloads a{font-size:17px;color:var(--ink, #eeeee3)}@media(max-width:650px){.scene-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.language-picker{display:flex;align-items:center;gap:8px;font-size:16px}.language-picker select{min-height:44px;max-width:132px}.transport{flex-wrap:wrap}.language-picker [data-language-label]{font-size:16px}@media(max-width:650px){header .transport{width:100%;justify-content:space-between;gap:12px}.language-picker{width:100%;justify-content:flex-end}}

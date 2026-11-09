@@ -4,7 +4,7 @@ const {validate,ranges,wavHeader}=require('./session.js'),drums=require('./drums
 const preset={format:'luma-orbit',version:2,base:Array(8).fill(0),notes:Array(8).fill(1),locks:Array(8).fill(false),sound:'bell',scale:'minor',flow:false,drumsEnabled:true,drumEnabled:{kick:true,clap:false,hat:true},controls:Object.fromEntries(Object.entries(ranges).map(([k,[min]])=>[k,min])),phrase:Array.from({length:8},(_,index)=>({index,beats:1,rest:false})),drumPattern:drums.pattern(.5)};
 assert.deepEqual(validate(preset),preset);
 const old={...structuredClone(preset),format:'luma-orbit-web',version:1};delete old.controls.energy;delete old.controls.swing;delete old.controls.probability;
-assert.equal(validate(old).controls.energy,50);assert.equal(validate(old).controls.probability,100);
+delete old.controls.body;assert.equal(validate(old).controls.body,0);assert.equal(validate(old).controls.energy,50);assert.equal(validate(old).controls.probability,100);
 const bank=structuredClone(preset);bank.scenes=[structuredClone(preset),null,null,null];assert.deepEqual(validate(bank),bank);
 bank.scenes[0].scenes=[];assert.throws(()=>validate(bank));
 for(const mutate of [p=>p.version=3,p=>p.notes[0]=8,p=>p.controls.bpm=Infinity,p=>p.controls['delay-feedback']=99,p=>p.locks=[],p=>p.phrase[0].beats=0,p=>p.drumPattern[0].velocity=2]){const p=structuredClone(preset);mutate(p);assert.throws(()=>validate(p));}

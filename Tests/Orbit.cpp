@@ -1,4 +1,5 @@
 #include "../Source/Orbit/Processor.h"
+#include "../Source/Orbit/Localization.h"
 #include <iostream>
 #include <stdexcept>
 using namespace juce;
@@ -11,6 +12,15 @@ struct Host final:AudioPlayHead {
 int main(){
     ScopedJuceInitialiser_GUI gui;
     try{
+        for(const auto* language:orbit::localization::languageIds){
+            check(orbit::localization::resolve(String(language)+"-XX")==language,"Locale resolution failed");
+            check(orbit::localization::translate("Corpo",language).isNotEmpty(),"Missing Body translation");
+        }
+        check(orbit::localization::resolve("ja-JP")=="en","Unsupported locale fallback failed");
+        // Body must add lower harmonic energy, not merely amplify the original sine.
+        auto bodySpectrum=[](float body){orbit::ToneVoice voice;voice.frequency=440;voice.level=.3f;voice.duration=1;double sine=0,cosine=0,power=0;
+            for(int i=0;i<24000;++i){const auto x=voice.sample(48000,.7f,body);check(std::isfinite(x)&&std::abs(x)<=.3f,"Body exceeded voice headroom");sine+=x*std::sin(2*orbit::pi*220*i/48000);cosine+=x*std::cos(2*orbit::pi*220*i/48000);power+=x*x;}return std::array<double,2>{{sine*sine+cosine*cosine,power}};};
+        const auto dryBody=bodySpectrum(0),fullBody=bodySpectrum(1);check(fullBody[0]>dryBody[0]*10,"Body did not add lower harmonics");check(fullBody[1]<dryBody[1]*1.2,"Body is only a level boost");
         // A quarter-second echo at 120 BPM must land on sample 12000 at 48 kHz.
         orbit::Effects fx;fx.prepare(48000);AudioBuffer<float> impulse(2,24001);impulse.clear();impulse.setSample(0,0,.5f);
         fx.process(impulse,120,0,1,0,0,.5f);
@@ -46,6 +56,8 @@ int main(){
         const auto sharedFile=File(__FILE__).getParentDirectory().getChildFile("fixtures/orbit-shared.json");
         LumaOrbit shared;check(shared.loadPreset(sharedFile),"Shared web preset rejected");auto captured=shared.currentSnapshot();
         check(captured.settings.patternLength==12&&captured.settings.pattern[1].rest&&captured.settings.pattern[0].beats==2,"Shared phrase lost rhythm");
+        check(captured.settings.body==0,"Legacy JSON enabled Body");
+        auto bodyJson=orbit::toJson(captured);bodyJson["controls"].getDynamicObject()->setProperty("body",70);orbit::Snapshot bodySnapshot;check(orbit::fromJson(bodyJson,bodySnapshot)&&std::abs(bodySnapshot.settings.body-.7f)<.001f,"Body preset roundtrip failed");
         auto invalid=orbit::toJson(captured);invalid["controls"].getDynamicObject()->setProperty("probability",101);orbit::Snapshot untouched;check(!orbit::fromJson(invalid,untouched),"Invalid probability accepted");
         auto legacyWeb=orbit::toJson(captured);legacyWeb.getDynamicObject()->setProperty("format","luma-orbit-web");legacyWeb.getDynamicObject()->setProperty("version",1);for(const char* id:{"swing","probability","energy"})legacyWeb["controls"].getDynamicObject()->removeProperty(id);check(orbit::fromJson(legacyWeb,untouched)&&untouched.settings.swing==0&&untouched.settings.probability==1&&untouched.settings.energy==.5f,"Legacy web migration failed");
         shared.prepareToPlay(48000,256);set(shared,"sync",0);set(shared,"run",1);AudioBuffer<float> sharedAudio(2,256);MidiBuffer sharedMidi;shared.processBlock(sharedAudio,sharedMidi);shared.capture();shared.processBlock(sharedAudio,sharedMidi);shared.serviceScenes();
@@ -102,10 +114,16 @@ int main(){
         set(p,"synthVolume",1);set(p,"roomMix",1);set(p,"volume",0);
         for(int block=0;block<10;++block)p.processBlock(audio,midi);check(audio.getMagnitude(0,512)==0,"Master did not mute effects");
         std::unique_ptr<AudioProcessorEditor> editor(p.createEditor());
+        const auto parametersBeforeLanguage=p.state.copyState().toXmlString();
+        for(auto* child:editor->getChildren())if(child->getComponentID()=="language")if(auto* selector=dynamic_cast<ComboBox*>(child)){
+            for(int i=0;i<selector->getNumItems();++i){selector->setSelectedId(i+1,dontSendNotification);selector->onChange();check(p.state.copyState().toXmlString()==parametersBeforeLanguage,"Language changed audio parameters");
+                auto languageImage=editor->createComponentSnapshot(editor->getLocalBounds());FileOutputStream languageStream(File::getCurrentWorkingDirectory().getChildFile("Luma-Orbit-"+String(orbit::localization::languageIds[size_t(i)])+".png"));languageStream.setPosition(0);languageStream.truncate();PNGImageFormat().writeImageToStream(languageImage,languageStream);
+            }
+        }
         for(auto* child:editor->getChildren())if(auto* combo=dynamic_cast<ComboBox*>(child))check(combo->getSelectedId()>0&&combo->getText().isNotEmpty(),"Editor selection lost while naming notes");
         auto snapshot=editor->createComponentSnapshot(editor->getLocalBounds());
         File output=File::getCurrentWorkingDirectory().getChildFile("Luma-Orbit-preview.png");FileOutputStream stream(output);stream.setPosition(0);stream.truncate();PNGImageFormat().writeImageToStream(snapshot,stream);
-        for(auto* child:editor->getChildren())if(auto* button=dynamic_cast<TextButton*>(child))if(button->getButtonText()=="Effetti e scene"){button->setToggleState(true,dontSendNotification);button->onClick();}
+        for(auto* child:editor->getChildren())if(auto* button=dynamic_cast<TextButton*>(child))if(button->getComponentID()=="effects-page"){button->setToggleState(true,dontSendNotification);button->onClick();}
         auto performanceImage=editor->createComponentSnapshot(editor->getLocalBounds());FileOutputStream performanceStream(File::getCurrentWorkingDirectory().getChildFile("Luma-Orbit-scenes-preview.png"));performanceStream.setPosition(0);performanceStream.truncate();PNGImageFormat().writeImageToStream(performanceImage,performanceStream);
         std::cout<<"PASS: Orbit 5 sounds/3 rates, sample clock, locks, block invariance, DAW transport/seek/tempo, state, capture, stop and UI snapshot\n";
     }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}

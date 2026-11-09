@@ -43,3 +43,7 @@ Evitare pannelli affollati e scritte troppo piccole. La sperimentazione deve res
 ## Accessibility & Inclusion
 
 L'utente richiede scritte non troppo piccole. Testi operativi di almeno 16 px, controllo da tastiera, focus visibile, stato indicato anche con testo e forme. Ridurre le animazioni quando il sistema lo richiede.
+
+## Orbit 0.5
+
+Cinque lingue con selettore leggibile e preferenza locale. Corpo arricchisce il synth con due sinusoidi a ±7 cent e una all’ottava inferiore, normalizzando il guadagno. Default 35%, preset precedenti 0%. Nessuna preferenza di lingua entra nello stato musicale.

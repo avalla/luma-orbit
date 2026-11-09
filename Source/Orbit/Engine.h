@@ -12,7 +12,7 @@ struct Settings {
     std::array<int,8> notes=initialNotes;
     std::array<bool,8> locks{};
     double bpm=108;
-    float swing=0,probability=1,energy=.5f;
+    float swing=0,probability=1,energy=.5f,body=.35f;
     std::array<Event,16> pattern{};int patternLength=8;bool customPattern=false;
     std::array<std::array<bool,3>,16> percussion{};bool customDrums=false;
     std::array<float,16> percussionVelocity{{1,.6f,1,.6f,1,.6f,1,.6f,1,.6f,1,.6f,1,.6f,1,.6f}};
@@ -27,12 +27,12 @@ inline int midi(int degree,int scale) {
 }
 struct ToneVoice {
     double phase=0,frequency=440,age=0,duration=.35,attack=.006,filtered=0;
-    float level=0; int shape=0;
+    float level=0; int shape=0;double bodyPhaseA=0,bodyPhaseB=0,bodyPhaseLow=0;
     static double blep(double t,double dt) {
         if(t<dt){t/=dt;return 2*t-t*t-1;}
         if(t>1-dt){t=(t-1)/dt;return t*t+2*t+1;}return 0;
     }
-    float sample(double rate,float tone) {
+    float sample(double rate,float tone,float body=0) {
         if(age>=duration||level<=0)return 0;
         const auto dt=std::min(.45,frequency/rate);
         double value=std::sin(2*pi*phase);
@@ -40,6 +40,9 @@ struct ToneVoice {
         if(shape==4)value=std::sin(2*pi*phase+1.5*std::exp(-age*6)*std::sin(4*pi*phase));
         if(shape==1){value=0;for(int h=1;h<=15&&h*dt<.48;h+=2)value+=(h%4==1?1:-1)*std::sin(2*pi*h*phase)/(h*h);value*=8/(pi*pi);}
         if(shape==2)value=2*phase-1-blep(phase,dt);
+        if(body>0)value=(value+body*(.32*std::sin(2*pi*bodyPhaseA)+.32*std::sin(2*pi*bodyPhaseB)+.18*std::sin(2*pi*bodyPhaseLow)))/(1+.82*body);
+        bodyPhaseA+=dt*.9959649704;bodyPhaseB+=dt*1.004051747;bodyPhaseLow+=dt*.5;
+        if(bodyPhaseA>=1)bodyPhaseA-=1;if(bodyPhaseB>=1)bodyPhaseB-=1;if(bodyPhaseLow>=1)bodyPhaseLow-=1;
         phase+=dt;if(phase>=1)phase-=1;
         const double cutoff=std::min(rate*.4,300+13000*double(tone)*tone);
         filtered+=(1-std::exp(-2*pi*cutoff/rate))*(value-filtered);
@@ -67,7 +70,7 @@ public:
         settings=value;
     }
     void reset(double position){
-        notes=settings.notes;for(int i=0;i<16;++i)phrase[size_t(i)]={i%8,1,false};
+        smoothedBody=settings.body;notes=settings.notes;for(int i=0;i<16;++i)phrase[size_t(i)]={i%8,1,false};
         phraseLength=settings.customPattern?settings.patternLength:8;if(settings.customPattern)phrase=settings.pattern;phraseNumber=1;eventIndex=remaining=accent=voiceIndex=0;currentStep=-1;
         pulseCount=0;beat=position;gridPulse=int64_t(std::floor(position*2));nextPulse=gridPulse*.5+(gridPulse%2?.5*settings.swing:0);if(nextPulse<position-1e-8){++gridPulse;nextPulse=gridPulse*.5+(gridPulse%2?.5*settings.swing:0);}
         drumStep=int(std::fmod(std::floor(position*2),16)+16)%16;
@@ -96,7 +99,8 @@ public:
     float sample(){
         if(beat+1e-9>=nextPulse){pulse();++gridPulse;nextPulse=gridPulse*.5+(gridPulse%2?.5*settings.swing:0);}
         beat+=settings.bpm/(60*rate);
-        double melody=0;for(auto& v:voices)melody+=v.sample(rate,std::clamp(settings.tone+(settings.energy-.5f)*.5f,0.0f,1.0f));
+        smoothedBody+=(settings.body-smoothedBody)*std::min(1.0,1/(rate*.02));
+        double melody=0;for(auto& v:voices)melody+=v.sample(rate,std::clamp(settings.tone+(settings.energy-.5f)*.5f,0.0f,1.0f),float(smoothedBody));
         const float sub=bassVoice.sample(rate,.05f)*settings.bass;
         const double noise=double(nextRandom(noiseState))/4294967296.0*2-1;
         lowNoise+=.22*(noise-lowNoise);
@@ -118,7 +122,7 @@ public:
         return float(std::tanh((stems[0]+stems[1]+stems[2])*smoothedVolume));
     }
 private:
-    double rate=44100,nextPulse=0,kickAge=10,clapAge=10,hatAge=10,kickPhase=0,lowNoise=0,smoothedVolume=0;
+    double rate=44100,nextPulse=0,kickAge=10,clapAge=10,hatAge=10,kickPhase=0,lowNoise=0,smoothedVolume=0,smoothedBody=.35;
     std::array<ToneVoice,8> voices{};ToneVoice bassVoice;
     std::array<std::array<bool,3>,16> drumPattern{};
     std::array<float,16> velocities{{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}};

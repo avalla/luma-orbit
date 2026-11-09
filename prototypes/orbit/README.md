@@ -1,4 +1,24 @@
-# Luma Orbit 0.4.0 · web
+# Luma Orbit 0.5.0 · web
+
+## Lingua e suono pieno · 0.5
+
+Il selettore Lingua offre italiano, inglese, francese, tedesco e spagnolo. La scelta
+si conserva sul dispositivo e può cambiare durante l'ascolto. È una preferenza
+dell'interfaccia, esclusa dai preset; nomi tecnici dei parametri host e finestre
+di sistema seguono le rispettive convenzioni.
+
+**Corpo** aggiunge al synth due sinusoidi scordate di ±7 cent e una componente
+un'ottava sotto, con guadagno normalizzato. Parti dal 35% e prova 35–60% per dare
+più consistenza alle note. Sub e batteria conservano i propri volumi indipendenti.
+Le nuove sessioni partono dal 35%; i vecchi preset vengono caricati con Corpo a
+zero per conservarne il suono: alza il controllo per usare la nuova sonorità.
+
+Guide: [Italiano](https://github.com/avalla/luma-orbit/blob/main/docs/Orbit-quickstart.md) ·
+[English](https://github.com/avalla/luma-orbit/blob/main/docs/en/README.md) ·
+[Français](https://github.com/avalla/luma-orbit/blob/main/docs/fr/README.md) ·
+[Deutsch](https://github.com/avalla/luma-orbit/blob/main/docs/de/README.md) ·
+[Español](https://github.com/avalla/luma-orbit/blob/main/docs/es/README.md).
+
 
 [Guida rapida](../../docs/Orbit-quickstart.md) · [Changelog](../../CHANGELOG.md) · [Guida nativa](../../docs/Luma-Orbit.md)
 
@@ -94,7 +114,7 @@ python3 scripts/prepare_orbit_web.py
 npx wrangler@4.158.0 deploy --config wrangler.orbit.jsonc
 ```
 
-Lo staging copia solo i dieci file pubblici in `build/orbit-web`; test, documentazione e plugin nativi non vengono caricati. L'autenticazione resta nella configurazione locale di Wrangler.
+Lo staging copia solo i dodici file pubblici in `build/orbit-web`; test, documentazione e plugin nativi non vengono caricati. L'autenticazione resta nella configurazione locale di Wrangler.
 
 Il prototipo è distinto dai plugin Luma e Luma RMS esistenti: usa Web Audio, non il motore JUCE. La versione web non riceve MIDI né sincronizzazione DAW; il plugin nativo è separato e disponibile in questo repository; i preset JSON conservano le sequenze dopo la chiusura. Il sequencer pianifica note e batteria su AudioContext.currentTime con 100 ms di anticipo; un timer di 25 ms alimenta la coda senza determinare gli istanti di attacco. I cursori seguono il tempo di uscita audio tramite getOutputTimestamp, quando disponibile. Le modifiche ai parametri si applicano ai prossimi eventi non ancora programmati. Blocchi del thread principale oltre la finestra di anticipo possono interrompere il ritmo: il clock riparte senza raffiche di eventi arretrati. Cambiare scheda ferma l'audio.
 

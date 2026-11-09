@@ -33,3 +33,7 @@ lo stato della registrazione senza affidarsi soltanto al colore.
 ## Componenti e movimento
 
 Pulsanti alti almeno 44 px, selezione esplicita, focus ad alto contrasto, range nativi. Le orbite sono un diagramma del sequencer: si illumina solo il passo corrente. Nessuna rotazione decorativa. Layout su una colonna sotto 850 px. Cattura e annulla disabilitati quando non applicabili.
+
+## Orbit 0.5
+
+Cinque lingue con selettore leggibile e preferenza locale. Corpo arricchisce il synth con due sinusoidi a ±7 cent e una all’ottava inferiore, normalizzando il guadagno. Default 35%, preset precedenti 0%. Nessuna preferenza di lingua entra nello stato musicale.

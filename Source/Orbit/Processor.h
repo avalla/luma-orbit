@@ -69,7 +69,7 @@ private:
     bool wasPlaying=false,wasHost=false;
     std::atomic<bool> resetRequested{false};
     std::array<std::atomic<float>*,8> noteParams{},lockParams{};
-    enum Control {run,sync,flow,bpm,explore,tone,volume,density,depth,drumVolume,bass,scale,sound,accents,drums,kick,clap,hat,delayMix,delayFeedback,roomMix,roomSize,delayDivision,synthVolume,swing,probability,energy,count};
+    enum Control {run,sync,flow,bpm,explore,tone,volume,density,depth,drumVolume,bass,scale,sound,accents,drums,kick,clap,hat,delayMix,delayFeedback,roomMix,roomSize,delayDivision,synthVolume,swing,probability,energy,body,count};
     std::array<std::atomic<float>*,count> controls{};
     float value(Control c) const {return controls[size_t(c)]->load(std::memory_order_relaxed);}
 };

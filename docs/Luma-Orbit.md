@@ -1,4 +1,24 @@
-# Luma Orbit 0.4.0 · plugin nativo
+# Luma Orbit 0.5.0 · plugin nativo
+
+## Lingua e suono pieno · 0.5
+
+Il selettore Lingua offre italiano, inglese, francese, tedesco e spagnolo. La scelta
+si conserva sul dispositivo e può cambiare durante l'ascolto. È una preferenza
+dell'interfaccia, esclusa dai preset; nomi tecnici dei parametri host e finestre
+di sistema seguono le rispettive convenzioni.
+
+**Corpo** aggiunge al synth due sinusoidi scordate di ±7 cent e una componente
+un'ottava sotto, con guadagno normalizzato. Parti dal 35% e prova 35–60% per dare
+più consistenza alle note. Sub e batteria conservano i propri volumi indipendenti.
+Le nuove sessioni partono dal 35%; i vecchi preset vengono caricati con Corpo a
+zero per conservarne il suono: alza il controllo per usare la nuova sonorità.
+
+Guide: [Italiano](https://github.com/avalla/luma-orbit/blob/main/docs/Orbit-quickstart.md) ·
+[English](https://github.com/avalla/luma-orbit/blob/main/docs/en/README.md) ·
+[Français](https://github.com/avalla/luma-orbit/blob/main/docs/fr/README.md) ·
+[Deutsch](https://github.com/avalla/luma-orbit/blob/main/docs/de/README.md) ·
+[Español](https://github.com/avalla/luma-orbit/blob/main/docs/es/README.md).
+
 
 Synth e sequencer generativo con batteria elettronica, sub intonato e cinque timbri:
 Glass, Rubber, Mist, Soft Keys e Bell. Il motore C++ genera l'audio direttamente

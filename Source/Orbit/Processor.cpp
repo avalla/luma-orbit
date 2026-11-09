@@ -1,7 +1,7 @@
 #include "Processor.h"
 using namespace juce;
 namespace {
-constexpr const char* ids[]={"run","sync","flow","bpm","explore","tone","volume","density","depth","drumVolume","bass","scale","sound","accents","drums","kick","clap","hat","delayMix","delayFeedback","roomMix","roomSize","delayDivision","synthVolume","swing","probability","energy"};
+constexpr const char* ids[]={"run","sync","flow","bpm","explore","tone","volume","density","depth","drumVolume","bass","scale","sound","accents","drums","kick","clap","hat","delayMix","delayFeedback","roomMix","roomSize","delayDivision","synthVolume","swing","probability","energy","body"};
 AudioProcessorValueTreeState::ParameterLayout layout(){
     AudioProcessorValueTreeState::ParameterLayout p;
     auto boolean=[&](const char* id,const char* name,bool initial){p.add(std::make_unique<AudioParameterBool>(ParameterID{id,1},name,initial));};
@@ -22,6 +22,7 @@ AudioProcessorValueTreeState::ParameterLayout layout(){
     p.add(std::make_unique<AudioParameterFloat>(ParameterID{"swing",1},"Swing",NormalisableRange<float>(0,.6f,.01f),0));
     p.add(std::make_unique<AudioParameterFloat>(ParameterID{"probability",1},"Probability",NormalisableRange<float>(0,1,.01f),1));
     p.add(std::make_unique<AudioParameterFloat>(ParameterID{"energy",1},"Energy",NormalisableRange<float>(0,1,.01f),.5f));
+    p.add(std::make_unique<AudioParameterFloat>(ParameterID{"body",1},"Body",NormalisableRange<float>(0,1,.01f),.35f));
     for(int i=0;i<8;++i){
         p.add(std::make_unique<AudioParameterInt>(ParameterID{"note"+String(i),1},"Nota "+String(i+1),0,7,orbit::initialNotes[size_t(i)]));
         p.add(std::make_unique<AudioParameterBool>(ParameterID{"lock"+String(i),1},"Blocca "+String(i+1),false));
@@ -89,6 +90,7 @@ void LumaOrbit::setStateInformation(const void* data,int size){
     auto xml=getXmlFromBinary(data,size);if(xml==nullptr||!xml->hasTagName("LumaOrbit"))return;
     auto incoming=ValueTree::fromXml(*xml),merged=initialState.createCopy();
     if(incoming.hasProperty("orbitSession")&&restoreJson(JSON::parse(incoming["orbitSession"].toString()))){auto saved=incoming.getChildWithProperty("id","sync");if(saved.isValid())state.getParameter("sync")->setValueNotifyingHost(float(saved["value"])>.5f?1:0);return;}
+    merged.getChildWithProperty("id","body").setProperty("value",0,nullptr);
     for(auto child:merged){const auto id=child["id"].toString();auto saved=incoming.getChildWithProperty("id",id);if(!saved.isValid()||!saved.hasProperty("value"))continue;
         const float v=float(saved["value"]);if(!std::isfinite(v))continue;auto* p=state.getParameter(id);child.setProperty("value",p->convertFrom0to1(jlimit(0.0f,1.0f,p->convertTo0to1(v))),nullptr);}
     // Restoring a session must not unexpectedly start the standalone transport.
@@ -106,7 +108,7 @@ bool LumaOrbit::loadPreset(const File& file){
 orbit::Snapshot LumaOrbit::readControls(orbit::Snapshot result){
     auto& s=result.settings;for(size_t i=0;i<8;++i){s.notes[i]=int(noteParams[i]->load());s.locks[i]=lockParams[i]->load()>.5f;}
     s.bpm=value(bpm);s.flow=value(flow)>.5f;s.explore=value(explore);s.tone=value(tone);s.volume=1;s.synthVolume=value(synthVolume);s.density=value(density);s.depth=value(depth);s.drumVolume=value(drumVolume);s.bass=value(bass);s.scale=int(value(scale));s.sound=int(value(sound));
-    constexpr int accentsList[]={5,7,8};s.accents=accentsList[jlimit(0,2,int(value(accents)))];s.drums=value(drums)>.5f;s.kick=value(kick)>.5f;s.clap=value(clap)>.5f;s.hat=value(hat)>.5f;s.swing=value(swing);s.probability=value(probability);s.energy=value(energy);
+    constexpr int accentsList[]={5,7,8};s.accents=accentsList[jlimit(0,2,int(value(accents)))];s.drums=value(drums)>.5f;s.kick=value(kick)>.5f;s.clap=value(clap)>.5f;s.hat=value(hat)>.5f;s.swing=value(swing);s.probability=value(probability);s.energy=value(energy);s.body=value(body);
     result.master=value(volume);result.effects={{value(delayMix),value(delayFeedback),value(roomMix),value(roomSize),value(delayDivision)}};return result;
 }
 orbit::Snapshot LumaOrbit::currentSnapshot(){
@@ -116,7 +118,7 @@ orbit::Snapshot LumaOrbit::currentSnapshot(){
 }
 void LumaOrbit::applyControls(const orbit::Snapshot& snapshot){
     const auto& s=snapshot.settings;auto set=[this](const String& id,float v){auto* p=state.getParameter(id);p->setValueNotifyingHost(p->convertTo0to1(v));};
-    set("bpm",float(s.bpm));set("flow",s.flow);set("explore",s.explore);set("tone",s.tone);set("volume",snapshot.master);set("density",s.density);set("depth",s.depth);set("drumVolume",s.drumVolume);set("bass",s.bass);set("scale",float(s.scale));set("sound",float(s.sound));set("accents",s.accents==5?0:s.accents==7?1:2);set("drums",s.drums);set("kick",s.kick);set("clap",s.clap);set("hat",s.hat);set("synthVolume",s.synthVolume);set("swing",s.swing);set("probability",s.probability);set("energy",s.energy);
+    set("bpm",float(s.bpm));set("flow",s.flow);set("explore",s.explore);set("tone",s.tone);set("volume",snapshot.master);set("density",s.density);set("depth",s.depth);set("drumVolume",s.drumVolume);set("bass",s.bass);set("scale",float(s.scale));set("sound",float(s.sound));set("accents",s.accents==5?0:s.accents==7?1:2);set("drums",s.drums);set("kick",s.kick);set("clap",s.clap);set("hat",s.hat);set("synthVolume",s.synthVolume);set("swing",s.swing);set("probability",s.probability);set("energy",s.energy);set("body",s.body);
     const char* fx[]={"delayMix","delayFeedback","roomMix","roomSize","delayDivision"};for(int i=0;i<5;++i)set(fx[i],snapshot.effects[size_t(i)]);
     for(int i=0;i<8;++i){set("note"+String(i),float(s.notes[size_t(i)]));set("lock"+String(i),s.locks[size_t(i)]);}
 }

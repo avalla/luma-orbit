@@ -7,6 +7,8 @@ on:
     tags: ['orbit-v*']
     paths:
       - 'Source/**'
+      - 'locales/**'
+      - 'scripts/generate_orbit_locales.py'
       - 'Tests/**'
       - 'prototypes/orbit/**'
       - 'CMakeLists.txt'
@@ -44,6 +46,8 @@ jobs:
 
       - name: Test web sequencer and files
         run: |
+          python3 scripts/generate_orbit_locales.py --check
+          node prototypes/orbit/i18n.test.cjs
           node prototypes/orbit/flow.test.cjs
           node prototypes/orbit/clock.test.cjs
           node prototypes/orbit/session.test.cjs

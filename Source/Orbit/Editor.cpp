@@ -1,4 +1,5 @@
 #include "Processor.h"
+#include "Localization.h"
 using namespace juce;
 namespace {
 const Colour background(0xff1c1d19),surface(0xff272922),line(0xff4b4e42),ink(0xffeeeee3),muted(0xffb8bca9),lime(0xffc5e66c),peach(0xffefaf80);
@@ -25,14 +26,14 @@ public:
         scale.addItemList({"La minore","Do maggiore","La pentatonica"},1);sound.addItemList({"Glass","Rubber","Mist","Soft Keys","Bell"},1);accents.addItemList({"5 accenti","7 accenti","8 accenti"},1);
         for(auto* c:{&scale,&sound,&accents})addAndMakeVisible(c);
         scaleLink=std::make_unique<State::ComboBoxAttachment>(owner.state,"scale",scale);soundLink=std::make_unique<State::ComboBoxAttachment>(owner.state,"sound",sound);accentLink=std::make_unique<State::ComboBoxAttachment>(owner.state,"accents",accents);
-        const char* sliderIds[]={"bpm","explore","tone","bass","volume","density","depth","drumVolume","synthVolume"};
-        const char* names[]={"Tempo interno","Esplora","Luminosita","Sub intonato","Volume generale","Densita ritmo","Profondita cassa","Volume ritmo","Volume synth"};
+        const char* sliderIds[]={"bpm","explore","tone","bass","volume","density","depth","drumVolume","synthVolume","body"};
+        const char* names[]={"Tempo interno","Esplora","Luminosita","Sub intonato","Volume generale","Densita ritmo","Profondita cassa","Volume ritmo","Volume synth","Corpo"};
         for(size_t i=0;i<sliders.size();++i){auto& s=sliders[i];s.setSliderStyle(Slider::LinearHorizontal);s.setTextBoxStyle(Slider::TextBoxRight,false,78,30);s.setNumDecimalPlacesToDisplay(i==0?0:2);addAndMakeVisible(s);
             labels[i].setText(names[i],dontSendNotification);labels[i].setFont(FontOptions(17));addAndMakeVisible(labels[i]);sliderLinks[i]=std::make_unique<State::SliderAttachment>(owner.state,sliderIds[i],s);}
         for(int i=0;i<8;++i){auto index=size_t(i);for(int n=0;n<8;++n)notes[index].addItem(String(n+1),n+1);addAndMakeVisible(notes[index]);
             noteLinks[index]=std::make_unique<State::ComboBoxAttachment>(owner.state,"note"+String(i),notes[index]);
             locks[index].setButtonText("Fisso");locks[index].setClickingTogglesState(true);addAndMakeVisible(locks[index]);lockLinks[index]=std::make_unique<State::ButtonAttachment>(owner.state,"lock"+String(i),locks[index]);}
-        addAndMakeVisible(effectPage);effectPage.setButtonText("Effetti e scene");effectPage.setClickingTogglesState(true);
+        addAndMakeVisible(effectPage);effectPage.setComponentID("effects-page");effectPage.setButtonText("Effetti e scene");effectPage.setClickingTogglesState(true);
         effectPage.onClick=[this]{showEffects=effectPage.getToggleState();updatePage();};
         division.addItemList({"Delay: 1/8","Delay: 1/8 puntato","Delay: 1/4"},1);addChildComponent(division);
         divisionLink=std::make_unique<State::ComboBoxAttachment>(owner.state,"delayDivision",division);
@@ -47,13 +48,19 @@ public:
         savePreset.onClick=[this]{chooseFile(0);};loadPreset.onClick=[this]{chooseFile(1);};
         record.onClick=[this]{if(owner.recorder.active.load()){owner.recorder.stop();recording=false;fileStatus="WAV salvato";}else chooseFile(2);};
         fileMessage.setFont(FontOptions(16));addAndMakeVisible(fileMessage);
+        addAndMakeVisible(languageSelector);languageSelector.setComponentID("language");
+        for(size_t i=0;i<std::size(orbit::localization::languageIds);++i)languageSelector.addItem(String::fromUTF8(orbit::localization::languageNames[i]),int(i+1));
+        for(size_t i=0;i<std::size(orbit::localization::languageIds);++i)if(language==orbit::localization::languageIds[i])languageSelector.setSelectedId(int(i+1),dontSendNotification);
+        rememberTranslations();refreshLanguage();
+        languageSelector.onChange=[this]{language=orbit::localization::languageIds[size_t(languageSelector.getSelectedId()-1)];if(isShowing())orbit::localization::save(language);refreshLanguage();};
         resized();timerCallback();startTimerHz(30);
     }
     ~OrbitEditor() override{stopTimer();owner.recorder.stop();owner.stems.stop();setLookAndFeel(nullptr);}
     void resized()override{
+        languageSelector.setBounds(458,22,164,44);
         buttons[0].setBounds(640,22,112,44);buttons[1].setBounds(764,22,120,44);buttons[2].setBounds(896,22,112,44);
         scale.setBounds(32,106,220,42);sound.setBounds(548,106,220,42);accents.setBounds(780,106,228,42);
-        for(int i=0;i<9;++i){labels[size_t(i)].setBounds(548,170+i*52,200,24);sliders[size_t(i)].setBounds(738,166+i*52,270,36);}
+        for(int i=0;i<10;++i){labels[size_t(i)].setBounds(548,170+i*46,200,24);sliders[size_t(i)].setBounds(738,166+i*46,270,36);}
         for(int i=3;i<7;++i)buttons[size_t(i)].setBounds(32+(i-3)*122,540,112,42);
         capture.setBounds(32,601,228,44);effectPage.setBounds(280,601,228,44);
         savePreset.setBounds(32,824,180,42);loadPreset.setBounds(224,824,180,42);record.setBounds(416,824,200,42);fileMessage.setBounds(636,822,372,48);
@@ -77,19 +84,46 @@ public:
         }
         const int accentCount=accents.getSelectedId()==2?7:accents.getSelectedId()==3?8:5;
         for(int i=0;i<accentCount;++i){const auto a=i*2*orbit::pi/accentCount-orbit::pi/2;const float size=owner.livePlaying.load()&&owner.liveAccent.load()==i?16.0f:10.0f;g.setColour(peach);g.fillEllipse(cx+112*float(std::cos(a))-size/2,cy+112*float(std::sin(a))-size/2,size,size);}
-        g.setColour(muted);g.setFont(FontOptions(17));g.drawText("FRASE",int(cx-60),int(cy-38),120,25,Justification::centred);g.setColour(ink);g.setFont(FontOptions(32));g.drawText(String(owner.livePhrase.load()),int(cx-60),int(cy-9),120,43,Justification::centred);
-        g.setFont(FontOptions(16));g.setColour(muted);g.drawText("8 note. Blocca quelle da conservare.",32,501,480,30,Justification::centred);
+        g.setColour(muted);g.setFont(FontOptions(17));g.drawText(tr("FRASE"),int(cx-60),int(cy-38),120,25,Justification::centred);g.setColour(ink);g.setFont(FontOptions(32));g.drawText(String(owner.livePhrase.load()),int(cx-60),int(cy-9),120,43,Justification::centred);
+        g.setFont(FontOptions(16));g.setColour(muted);g.drawText(tr("8 note. Blocca quelle da conservare."),32,501,480,30,Justification::centred);
         }
-        if(showEffects){g.setColour(ink);g.setFont(FontOptions(26));g.drawText("Le tue scene",32,180,476,40,Justification::centredLeft);g.setFont(FontOptions(17));g.setColour(muted);g.drawFittedText("Salva qui conserva suono, frase e ritmo.\nRichiama una scena alla prossima battuta.\nI tre WAV sono asciutti e allineati.\nMIDI: frase, sub e batteria senza probabilita.",32,232,476,112,Justification::topLeft,4);g.setColour(ink);g.setFont(FontOptions(20));g.drawText("Spazio e movimento",548,162,460,30,Justification::centredLeft);g.setColour(muted);g.setFont(FontOptions(16));g.drawText("Energia modula timbro, variazioni e densita.",548,558,460,26,Justification::centredLeft);}
+        if(showEffects){g.setColour(ink);g.setFont(FontOptions(26));g.drawText(tr("Le tue scene"),32,180,476,40,Justification::centredLeft);g.setFont(FontOptions(17));g.setColour(muted);g.drawFittedText(tr("Salva qui conserva suono, frase e ritmo.\nRichiama una scena alla prossima battuta.\nI tre WAV sono asciutti e allineati.\nMIDI: frase, sub e batteria senza probabilita."),32,232,476,112,Justification::topLeft,4);g.setColour(ink);g.setFont(FontOptions(20));g.drawText(tr("Spazio e movimento"),548,162,460,30,Justification::centredLeft);g.setColour(muted);g.setFont(FontOptions(16));g.drawText(tr("Energia modula timbro, variazioni e densita."),548,558,460,26,Justification::centredLeft);}
         if(showEffects)for(int i=0;i<8;++i)g.drawText(String(i+1),32+i*122,668,112,22,Justification::centred);
-        const auto status=owner.hostAvailable.load()?String("DAW: ")+(owner.livePlaying.load()?"in riproduzione":"in pausa"):String("Clock interno: ")+(owner.livePlaying.load()?"in riproduzione":"premi Ascolta");
+        const auto status=owner.hostAvailable.load()?String("DAW: ")+(owner.livePlaying.load()?tr("in riproduzione"):tr("in pausa")):String(tr("Clock interno: "))+(owner.livePlaying.load()?tr("in riproduzione"):tr("premi Ascolta"));
         g.drawText(status+"  |  "+String(owner.liveBpm.load(),1)+" BPM",32,786,976,24,Justification::centredLeft);
     }
 private:
+    String language=orbit::localization::preferred();ComboBox languageSelector;
+    String tr(const String& key)const{return orbit::localization::translate(key,language);}
+    static bool hasTranslation(const String& key){for(const auto& entry:orbit::localization::messages)if(key==String::fromUTF8(entry.source))return true;return false;}
+    void rememberTranslations(){
+        // Only top-level controls: slider text boxes and combo labels hold live values.
+        for(auto* child:getChildren()){
+            if(auto* b=dynamic_cast<TextButton*>(child)){if(hasTranslation(b->getButtonText()))b->getProperties().set("translation",b->getButtonText());}
+            else if(auto* l=dynamic_cast<Label*>(child)){if(hasTranslation(l->getText()))l->getProperties().set("translation",l->getText());}
+            else if(auto* c=dynamic_cast<ComboBox*>(child))for(int i=0;i<c->getNumItems();++i)if(hasTranslation(c->getItemText(i)))c->getProperties().set("translation"+String(c->getItemId(i)),c->getItemText(i));
+        }
+    }
+    void refreshLanguage(){
+        for(auto* child:getChildren()){
+            const auto key=child->getProperties()["translation"].toString();
+            if(auto* b=dynamic_cast<TextButton*>(child)){if(key.isNotEmpty())b->setButtonText(tr(key));}
+            else if(auto* l=dynamic_cast<Label*>(child)){if(key.isNotEmpty())l->setText(tr(key),dontSendNotification);}
+            else if(auto* c=dynamic_cast<ComboBox*>(child)){
+                const int selected=c->getSelectedId();
+                for(int i=0;i<c->getNumItems();++i){const auto itemKey=c->getProperties()["translation"+String(c->getItemId(i))].toString();if(itemKey.isNotEmpty())c->changeItemText(c->getItemId(i),tr(itemKey));}
+                c->setSelectedId(selected,dontSendNotification);
+            }
+        }
+        languageSelector.setTitle(tr("Lingua"));languageSelector.setTooltip(tr("Lingua"));
+        capture.setTooltip(tr("Conserva note, pause, durate e batteria. La frase si salva nella sessione DAW."));
+        sliders[9].setTooltip(tr("Raddoppio detunato e armoniche calde. A zero resta il suono originale."));
+        updatePage();timerCallback();repaint();
+    }
     using State=AudioProcessorValueTreeState;
     LumaOrbit& owner;OrbitTheme theme;TooltipWindow tips{this,700};
     std::array<TextButton,7> buttons;TextButton capture;
-    std::array<Slider,9> sliders;std::array<Label,9> labels;std::array<ComboBox,8> notes;std::array<TextButton,8> locks;
+    std::array<Slider,10> sliders;std::array<Label,10> labels;std::array<ComboBox,8> notes;std::array<TextButton,8> locks;
     ComboBox scale,sound,accents,division;TextButton effectPage;bool showEffects=false;
     std::array<Slider,7> fx;std::array<Label,7> fxLabels;
     std::array<TextButton,4> sceneButtons,sceneSaves;TextButton midiExport,stemRecord,fill;bool stemsRecording=false;
@@ -100,10 +134,10 @@ private:
         sound.setVisible(!showEffects);accents.setVisible(!showEffects);division.setVisible(showEffects);
         for(auto& s:fx)s.setVisible(showEffects);for(auto& l:fxLabels)l.setVisible(showEffects);
         for(auto& b:sceneButtons)b.setVisible(showEffects);for(auto& b:sceneSaves)b.setVisible(showEffects);for(auto* b:{&midiExport,&stemRecord,&fill})b->setVisible(showEffects);
-        effectPage.setButtonText(showEffects?"Torna al suono":"Effetti e scene");repaint();
+        effectPage.setButtonText(tr(showEffects?"Torna al suono":"Effetti e scene"));repaint();
     }
     std::array<std::unique_ptr<State::ButtonAttachment>,7> buttonLinks;
-    std::array<std::unique_ptr<State::SliderAttachment>,9> sliderLinks;
+    std::array<std::unique_ptr<State::SliderAttachment>,10> sliderLinks;
     std::array<std::unique_ptr<State::ComboBoxAttachment>,8> noteLinks;
     std::array<std::unique_ptr<State::ButtonAttachment>,8> lockLinks;
     std::unique_ptr<State::ComboBoxAttachment> scaleLink,soundLink,accentLink;
@@ -112,7 +146,7 @@ private:
     void chooseFile(int action){
         if(chooser)return;
         const auto extension=action==1?"*.json;*.orbit":action==0?"*.json":action==3?"*.mid":"*.wav";
-        chooser=std::make_unique<FileChooser>(action==1?"Apri preset Orbit":"Salva Orbit",File::getSpecialLocation(File::userDocumentsDirectory).getChildFile(action==0||action==1?"Orbit.json":action==3?"Orbit.mid":"Orbit.wav"),extension);
+        chooser=std::make_unique<FileChooser>(tr(action==1?"Apri preset Orbit":"Salva Orbit"),File::getSpecialLocation(File::userDocumentsDirectory).getChildFile(action==0||action==1?"Orbit.json":action==3?"Orbit.mid":"Orbit.wav"),extension);
         const auto flags=FileBrowserComponent::canSelectFiles|(action==1?FileBrowserComponent::openMode:FileBrowserComponent::saveMode|FileBrowserComponent::warnAboutOverwriting);
         Component::SafePointer<OrbitEditor> safe(this);
         chooser->launchAsync(flags,[safe,action](const FileChooser& dialog){
@@ -133,12 +167,12 @@ private:
     void timerCallback()override{
         owner.serviceScenes();for(int i=0;i<4;++i){sceneButtons[size_t(i)].setEnabled(owner.hasScene(i));sceneButtons[size_t(i)].setToggleState(owner.activeScene.load()==i,dontSendNotification);}
         if(stemsRecording&&!owner.stems.active.load()){owner.stems.stop();stemsRecording=false;fileStatus=owner.stems.failed.load()?"Errore: tracce incomplete":"Tre WAV salvati (5 minuti)";}
-        stemRecord.setButtonText(owner.stems.active.load()?"Ferma le 3 tracce":"Registra 3 tracce");
+        stemRecord.setButtonText(tr(owner.stems.active.load()?"Ferma le 3 tracce":"Registra 3 tracce"));
         if(owner.queuedScene.load()>=0)fileStatus="Scena in attesa della battuta";
         const bool active=owner.recorder.active.load();
         if(recording&&!active){owner.recorder.stop();recording=false;fileStatus=owner.recorder.failed.load()?"Errore: WAV incompleto":"WAV salvato (5 minuti)";}
-        record.setButtonText(active?"Ferma e salva WAV":"Registra WAV");
-        fileMessage.setText(active?"REC  "+String(owner.recorder.seconds(),1)+" s / 300 s":fileStatus,dontSendNotification);
+        record.setButtonText(tr(active?"Ferma e salva WAV":"Registra WAV"));
+        fileMessage.setText(active?"REC  "+String(owner.recorder.seconds(),1)+" s / 300 s":tr(fileStatus),dontSendNotification);
         const bool host=owner.hostAvailable.load();buttons[0].setEnabled(!host);sliders[0].setEnabled(!host);
         const int selected=int(owner.state.getRawParameterValue("scale")->load());
         if(selected!=previousScale){previousScale=selected;for(auto& combo:notes){const int selectedId=combo.getSelectedId();for(int n=0;n<8;++n)combo.changeItemText(n+1,noteName(orbit::midi(n,selected)));combo.setSelectedId(selectedId,dontSendNotification);}}

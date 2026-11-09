@@ -24,7 +24,7 @@ inline juce::var toJson(const Snapshot& snapshot){
     put(enabled,"kick",s.kick);put(enabled,"clap",s.clap);put(enabled,"hat",s.hat);put(p,"drumEnabled",enabled);
     auto percent=[&](const char* id,float value){put(c,id,std::round(double(value)*10000)/100);};
     put(c,"bpm",s.bpm);percent("amount",s.explore);percent("tone",s.tone);percent("bass",s.bass);percent("volume",snapshot.master);percent("density",s.density);percent("depth",s.depth);percent("drum-volume",s.drumVolume);percent("synth-volume",s.synthVolume);
-    percent("swing",s.swing);percent("probability",s.probability);percent("energy",s.energy);
+    percent("swing",s.swing);percent("probability",s.probability);percent("energy",s.energy);percent("body",s.body);
     const char* fx[]={"delay-mix","delay-feedback","room-mix","room-size"};for(int i=0;i<4;++i)percent(fx[i],snapshot.effects[size_t(i)]);
     put(c,"delay-division",int(snapshot.effects[4]));put(c,"accent-length",s.accents);put(p,"controls",c);return p;
 }
@@ -43,6 +43,7 @@ inline bool fromJson(const juce::var& p,Snapshot& result){
     const auto c=p["controls"];bool valid=true;auto percent=[&](const char* id,float& dest,double max=100){if(!number(c[id],0,max)){valid=false;return;}dest=float(double(c[id])/100);};
     if(!number(c["bpm"],40,200))return false;s.bpm=double(c["bpm"]);
     percent("amount",s.explore);percent("tone",s.tone);percent("bass",s.bass);percent("volume",next.master);percent("density",s.density);percent("depth",s.depth);percent("drum-volume",s.drumVolume);percent("synth-volume",s.synthVolume);
+    s.body=0;if(c.hasProperty("body"))percent("body",s.body);
     if(!legacy){percent("swing",s.swing,60);percent("probability",s.probability);percent("energy",s.energy);}
     const char* fx[]={"delay-mix","delay-feedback","room-mix","room-size"};for(int i=0;i<4;++i)percent(fx[i],next.effects[size_t(i)],i==1?75:100);
     if(!integer(c["delay-division"],0,2)||!integer(c["accent-length"],5,8))return false;next.effects[4]=float(c["delay-division"]);s.accents=int(c["accent-length"]);if(s.accents!=5&&s.accents!=7&&s.accents!=8)return false;

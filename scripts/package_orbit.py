@@ -32,7 +32,7 @@ with tempfile.TemporaryDirectory(dir=delivery) as temporary:
         subprocess.run(['codesign', '--verify', '--deep', '--strict', str(target)], check=True)
     source = package / 'Sorgenti' / 'Luma'
     source.mkdir(parents=True)
-    for name in ['Source', 'Tests', 'scripts', 'docs']:
+    for name in ['Source', 'Tests', 'scripts', 'docs', 'locales']:
         shutil.copytree(root / name, source / name, ignore=shutil.ignore_patterns('__pycache__'))
     for name in ['CMakeLists.txt', 'README.md', 'LICENSE']:
         shutil.copy2(root / name, source / name)
